@@ -16,7 +16,8 @@ func New(
 	watchlistHandler *handler.WatchlistHandler,
 	authSvc *service.AuthService,
 ) *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Logger(), gin.Recovery())
 
 	r.GET("/api/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})

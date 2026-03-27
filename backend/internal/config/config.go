@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 	"strconv"
 
 	"github.com/joho/godotenv"
@@ -11,6 +12,7 @@ import (
 type Config struct {
 	AppPort string
 	GinMode string
+	TrustedProxies []string
 
 	DBHost     string
 	DBPort     string
@@ -44,6 +46,10 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		AppPort: getEnv("APP_PORT", "8080"),
 		GinMode: getEnv("GIN_MODE", "debug"),
+		TrustedProxies: getEnvSlice(
+			"TRUSTED_PROXIES",
+			[]string{"127.0.0.1", "::1"},
+		),
 
 		DBHost:     getEnv("DB_HOST", "127.0.0.1"),
 		DBPort:     getEnv("DB_PORT", "5432"),
@@ -86,4 +92,24 @@ func atoiWithDefault(key string, fallback int) (int, error) {
 		return 0, fmt.Errorf("%s must be number: %w", key, err)
 	}
 	return v, nil
+}
+
+func getEnvSlice(key string, fallback []string) []string {
+	raw, ok := os.LookupEnv(key)
+	if !ok || strings.TrimSpace(raw) == "" {
+		return fallback
+	}
+
+	parts := strings.Split(raw, ",")
+	values := make([]string, 0, len(parts))
+	for _, part := range parts {
+		v := strings.TrimSpace(part)
+		if v != "" {
+			values = append(values, v)
+		}
+	}
+	if len(values) == 0 {
+		return fallback
+	}
+	return values
 }

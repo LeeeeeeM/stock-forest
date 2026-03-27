@@ -43,6 +43,9 @@ func main() {
 	stockHandler := handler.NewStockHandler(quoteSvc)
 	watchlistHandler := handler.NewWatchlistHandler(watchlistRepo, quoteSvc)
 	r := router.New(authHandler, stockHandler, watchlistHandler, authSvc)
+	if err := r.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+		log.Fatalf("set trusted proxies failed: %v", err)
+	}
 
 	log.Printf("server running on :%s", cfg.AppPort)
 	if err := r.Run(":" + cfg.AppPort); err != nil {
