@@ -1,0 +1,233 @@
+import { useEffect, useMemo, useState } from 'react';
+import { AutoComplete, Button } from 'antd';
+import { Link, useNavigate } from 'react-router-dom';
+import { FlashMessage } from '@/components/FlashMessage';
+import { DashboardShell } from '@/components/layout/DashboardShell';
+import {
+  addWatchlist,
+  getWatchlistQuotes,
+  listWatchlist,
+  me,
+  removeWatchlist,
+  searchStocks,
+  type Quote,
+  type SearchItem,
+  type WatchlistItem,
+} from '@/lib/api';
+import { clearAccessToken, getAccessToken } from '@/lib/auth';
+
+function toNumberSafe(value?: string) {
+  if (!value) return 0;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function getTrendClass(change?: string) {
+  const n = toNumberSafe(change);
+  if (n > 0) return 'text-rose-400';
+  if (n < 0) return 'text-emerald-400';
+  return 'text-slate-300';
+}
+
+function formatPercent(percent?: string) {
+  if (!percent) return '-';
+  const n = Number(percent);
+  if (!Number.isFinite(n)) return '-';
+  if (n > 0) return `+${n.toFixed(2)}%`;
+  if (n < 0) return `${n.toFixed(2)}%`;
+  return '0.00%';
+}
+
+export function PortalPage() {
+  const navigate = useNavigate();
+  const [message, setMessage] = useState('');
+  const [profile, setProfile] = useState<{ id: number; username: string; email: string } | null>(null);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchItem[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+
+  const token = getAccessToken();
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/login', { replace: true });
+      return;
+    }
+    me(token).then(setProfile).catch(() => navigate('/login', { replace: true }));
+    listWatchlist(token).then(setWatchlist).catch(() => undefined);
+  }, [navigate, token]);
+
+  useEffect(() => {
+    if (!token) return;
+    if (watchlist.length === 0) {
+      setQuotes([]);
+      return;
+    }
+    const fetchQuotes = async () => {
+      try {
+        const data = await getWatchlistQuotes(token);
+        setQuotes(data);
+      } catch {
+        // noop
+      }
+    };
+    fetchQuotes();
+    const id = window.setInterval(fetchQuotes, 3000);
+    return () => window.clearInterval(id);
+  }, [token, watchlist.length]);
+
+  const quoteMap = useMemo(() => new Map(quotes.map((q) => [q.code.toLowerCase(), q])), [quotes]);
+
+  const onSearchKeyword = async (value: string) => {
+    setSearchKeyword(value);
+    const q = value.trim();
+    if (!q) {
+      setSearchResults([]);
+      return;
+    }
+    try {
+      setSearchLoading(true);
+      const data = await searchStocks(q);
+      setSearchResults(data.slice(0, 20));
+    } catch (err: any) {
+      setMessage(`搜索失败: ${err?.response?.data?.message ?? err.message}`);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const onAddWatch = async (item: SearchItem) => {
+    try {
+      const created = await addWatchlist(token, {
+        code: item.code,
+        name: item.name,
+        market: item.market,
+      });
+      setWatchlist((prev) => [created, ...prev]);
+    } catch (err: any) {
+      setMessage(`加自选失败: ${err?.response?.data?.message ?? err.message}`);
+    }
+  };
+
+  const onRemoveWatch = async (id: number) => {
+    try {
+      await removeWatchlist(token, id);
+      setWatchlist((prev) => prev.filter((x) => x.id !== id));
+    } catch (err: any) {
+      setMessage(`删除自选失败: ${err?.response?.data?.message ?? err.message}`);
+    }
+  };
+
+  const onLogout = () => {
+    clearAccessToken();
+    navigate('/login', { replace: true });
+  };
+
+  const searchOptions = searchResults.map((item) => ({
+    value: `${item.market}:${item.code}`,
+    label: `${item.name} (${item.code} · ${item.market})`,
+  }));
+
+  const onSelectSearch = async (value: string) => {
+    const [market, code] = value.split(':');
+    const target = searchResults.find((item) => item.market === market && item.code === code);
+    if (!target) return;
+    await onAddWatch(target);
+    setSearchKeyword('');
+    setSearchResults([]);
+  };
+
+  const userLine = profile ? (
+    <span className="max-w-[min(100%,20rem)] truncate text-sm text-slate-400 sm:max-w-[28rem]">
+      <span className="font-medium text-slate-200">{profile.username}</span>
+      <span className="mx-1.5 text-slate-600">·</span>
+      <span className="tabular-nums">{profile.email}</span>
+    </span>
+  ) : (
+    <span className="text-sm text-slate-500">加载中…</span>
+  );
+
+  return (
+    <DashboardShell
+      title="自选门户"
+      description="搜索标的并加入自选，列表每 3 秒刷新一次行情。"
+      trailing={
+        <>
+          {userLine}
+          <Link className="lf-link text-sm font-medium" to="/change-password">
+            修改密码
+          </Link>
+          <Button type="primary" danger ghost onClick={onLogout}>
+            退出登录
+          </Button>
+        </>
+      }
+    >
+      {message ? <FlashMessage className="mb-6" message={message} /> : null}
+
+      <section className="lf-panel mb-8">
+        <h2 className="lf-panel-title">搜索股票</h2>
+        <p className="lf-panel-desc">
+          支持关键词或代码；从下拉中选择一项即可加入自选（例如：茅台 / sh600519 / aapl / hk01810）。
+        </p>
+        <AutoComplete
+          className="w-full [&_.ant-select-selector]:min-h-10 [&_.ant-select-selector]:px-3 [&_.ant-select-selector]:py-1"
+          value={searchKeyword}
+          options={searchOptions}
+          onSearch={onSearchKeyword}
+          onSelect={onSelectSearch}
+          placeholder="输入代码或名称开始搜索"
+          notFoundContent={searchLoading ? '搜索中…' : '暂无结果'}
+          popupClassName="lf-select-dropdown"
+        />
+      </section>
+
+      <section className="lf-panel">
+        <h2 className="lf-panel-title">我的自选</h2>
+        <p className="lf-panel-desc">实时刷新：约每 3 秒拉取一次行情数据。</p>
+        <div className="space-y-3">
+          {watchlist.map((item) => {
+            const q = quoteMap.get(item.code.toLowerCase());
+            const trendClass = getTrendClass(q?.change);
+            return (
+              <div key={item.id} className="lf-row-card flex-wrap sm:flex-nowrap">
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium text-slate-100">{item.name}</div>
+                  <div className="text-xs text-slate-500">
+                    {item.code} · {item.market}
+                    <span className="mx-1.5 text-slate-600">·</span>
+                    {q?.time ?? '—'}
+                  </div>
+                </div>
+                <div className="grid w-full min-w-0 flex-1 grid-cols-2 gap-x-6 text-right sm:w-auto">
+                  <div>
+                    <div className={`lf-tabular text-base font-semibold ${trendClass}`}>
+                      {q?.price ?? '—'}
+                    </div>
+                    <div className={`lf-tabular text-xs ${trendClass}`}>
+                      {q?.change ?? '—'} · {formatPercent(q?.percent)}
+                    </div>
+                  </div>
+                  <div className="lf-tabular text-xs text-slate-500">
+                    <div>高 {q?.high ?? '—'}</div>
+                    <div>低 {q?.low ?? '—'}</div>
+                  </div>
+                </div>
+                <Button danger type="default" onClick={() => onRemoveWatch(item.id)}>
+                  删除
+                </Button>
+              </div>
+            );
+          })}
+          {watchlist.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-slate-600/60 bg-slate-900/30 py-10 text-center text-sm text-slate-500">
+              暂无自选，使用上方搜索添加标的
+            </p>
+          ) : null}
+        </div>
+      </section>
+    </DashboardShell>
+  );
+}
