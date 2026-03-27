@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Button } from 'antd';
+import { Button, message as antdMessage } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
-import { FlashMessage } from '@/components/FlashMessage';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { login } from '@/lib/api';
 import { setAccessToken } from '@/lib/auth';
 
 export function LoginPage() {
+  const [messageApi, contextHolder] = antdMessage.useMessage();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -20,7 +19,7 @@ export function LoginPage() {
       setAccessToken(data.accessToken);
       navigate('/portal', { replace: true });
     } catch (err: any) {
-      setMessage(`登录失败: ${err?.response?.data?.message ?? err.message}`);
+      messageApi.error(`登录失败: ${err?.response?.data?.message ?? err.message}`);
     }
   };
 
@@ -39,6 +38,7 @@ export function LoginPage() {
         </>
       }
     >
+      {contextHolder}
       <form className="space-y-5" onSubmit={onSubmit}>
         <div>
           <label className="lf-field-label" htmlFor="login-username">
@@ -78,7 +78,6 @@ export function LoginPage() {
           </Button>
         </div>
       </form>
-      {message ? <FlashMessage className="mt-6" message={message} /> : null}
     </AuthShell>
   );
 }

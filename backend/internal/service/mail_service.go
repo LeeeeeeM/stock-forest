@@ -27,7 +27,7 @@ func (m *MailService) Configured() bool {
 
 func (m *MailService) SendHTML(to []string, subject, html string) (string, error) {
 	if !m.Configured() {
-		return "", fmt.Errorf("mail service not configured: set RESEND_API_KEY and RESEND_FROM_EMAIL (请将 re_xxxxxxxxx 换成真实 Resend API Key)")
+		return "", fmt.Errorf("mail service not configured: set RESEND_API_KEY and RESEND_FROM_EMAIL")
 	}
 	sent, err := m.client.Emails.Send(&resend.SendEmailRequest{
 		From:    m.from,

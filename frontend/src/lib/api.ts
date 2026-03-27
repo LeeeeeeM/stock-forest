@@ -21,22 +21,38 @@ export async function register(payload: RegisterPayload) {
   return res.data;
 }
 
-export async function sendRegisterVerificationCode(email: string) {
-  const res = await api.post('/auth/email-verification/register', { email });
+export type CaptchaPayload = {
+  captchaId: string;
+  captchaCode: string;
+};
+
+export type CaptchaData = {
+  captchaId: string;
+  imageBase64: string;
+  imageDataUrl: string;
+};
+
+export async function getCaptcha() {
+  const res = await api.get('/auth/captcha');
+  return res.data as CaptchaData;
+}
+
+export async function sendRegisterVerificationCode(email: string, captcha: CaptchaPayload) {
+  const res = await api.post('/auth/email-verification/register', { email, ...captcha });
   return res.data as { message: string };
 }
 
-export async function sendChangePasswordVerificationCode(token: string, email: string) {
+export async function sendChangePasswordVerificationCode(token: string, email: string, captcha: CaptchaPayload) {
   const res = await api.post(
     '/auth/email-verification/change-password',
-    { email },
+    { email, ...captcha },
     { headers: { Authorization: `Bearer ${token}` } },
   );
   return res.data as { message: string };
 }
 
-export async function sendForgotPasswordVerificationCode(email: string) {
-  const res = await api.post('/auth/email-verification/forgot-password', { email });
+export async function sendForgotPasswordVerificationCode(email: string, captcha: CaptchaPayload) {
+  const res = await api.post('/auth/email-verification/forgot-password', { email, ...captcha });
   return res.data as { message: string };
 }
 

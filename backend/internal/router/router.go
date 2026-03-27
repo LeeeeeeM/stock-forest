@@ -29,6 +29,7 @@ func New(
 		auth.POST("/register", authHandler.Register)
 		auth.POST("/login", authHandler.Login)
 		auth.POST("/refresh", authHandler.Refresh)
+		auth.GET("/captcha", authHandler.GetCaptcha)
 		auth.POST("/email-verification/register", authHandler.SendRegisterVerificationCode)
 		auth.POST("/email-verification/forgot-password", authHandler.SendForgotPasswordVerificationCode)
 		auth.POST("/email-verification/change-password", middleware.AuthRequired(authSvc), authHandler.SendChangePasswordVerificationCode)

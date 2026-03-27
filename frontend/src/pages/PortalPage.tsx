@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AutoComplete, Button } from 'antd';
+import { AutoComplete, Button, message as antdMessage } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
-import { FlashMessage } from '@/components/FlashMessage';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import {
   addWatchlist,
@@ -39,8 +38,8 @@ function formatPercent(percent?: string) {
 }
 
 export function PortalPage() {
+  const [messageApi, contextHolder] = antdMessage.useMessage();
   const navigate = useNavigate();
-  const [message, setMessage] = useState('');
   const [profile, setProfile] = useState<{ id: number; username: string; email: string } | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResults, setSearchResults] = useState<SearchItem[]>([]);
@@ -92,7 +91,7 @@ export function PortalPage() {
       const data = await searchStocks(q);
       setSearchResults(data.slice(0, 20));
     } catch (err: any) {
-      setMessage(`搜索失败: ${err?.response?.data?.message ?? err.message}`);
+      messageApi.error(`搜索失败: ${err?.response?.data?.message ?? err.message}`);
     } finally {
       setSearchLoading(false);
     }
@@ -107,7 +106,7 @@ export function PortalPage() {
       });
       setWatchlist((prev) => [created, ...prev]);
     } catch (err: any) {
-      setMessage(`加自选失败: ${err?.response?.data?.message ?? err.message}`);
+      messageApi.error(`加自选失败: ${err?.response?.data?.message ?? err.message}`);
     }
   };
 
@@ -116,7 +115,7 @@ export function PortalPage() {
       await removeWatchlist(token, id);
       setWatchlist((prev) => prev.filter((x) => x.id !== id));
     } catch (err: any) {
-      setMessage(`删除自选失败: ${err?.response?.data?.message ?? err.message}`);
+      messageApi.error(`删除自选失败: ${err?.response?.data?.message ?? err.message}`);
     }
   };
 
@@ -165,7 +164,7 @@ export function PortalPage() {
         </>
       }
     >
-      {message ? <FlashMessage className="mb-6" message={message} /> : null}
+      {contextHolder}
 
       <section className="lf-panel mb-8">
         <h2 className="lf-panel-title">搜索股票</h2>

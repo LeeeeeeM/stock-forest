@@ -14,14 +14,21 @@ type AuthHandler struct {
 	authSvc         *service.AuthService
 	userRepo        *repository.UserRepository
 	verificationSvc *service.VerificationService
+	captchaSvc      *service.CaptchaService
 }
 
 func NewAuthHandler(
 	authSvc *service.AuthService,
 	userRepo *repository.UserRepository,
 	verificationSvc *service.VerificationService,
+	captchaSvc *service.CaptchaService,
 ) *AuthHandler {
-	return &AuthHandler{authSvc: authSvc, userRepo: userRepo, verificationSvc: verificationSvc}
+	return &AuthHandler{
+		authSvc:         authSvc,
+		userRepo:        userRepo,
+		verificationSvc: verificationSvc,
+		captchaSvc:      captchaSvc,
+	}
 }
 
 type registerReq struct {
@@ -37,11 +44,15 @@ type loginReq struct {
 }
 
 type sendRegisterCodeReq struct {
-	Email string `json:"email"`
+	Email       string `json:"email"`
+	CaptchaID   string `json:"captchaId"`
+	CaptchaCode string `json:"captchaCode"`
 }
 
 type sendChangePasswordCodeReq struct {
-	Email string `json:"email"`
+	Email       string `json:"email"`
+	CaptchaID   string `json:"captchaId"`
+	CaptchaCode string `json:"captchaCode"`
 }
 
 type forgotPasswordReq struct {
@@ -66,6 +77,10 @@ func (h *AuthHandler) SendRegisterVerificationCode(c *gin.Context) {
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	if req.Email == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "email required"})
+		return
+	}
+	if err := h.captchaSvc.VerifyAndConsume(req.CaptchaID, req.CaptchaCode); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 	if err := h.verificationSvc.SendRegisterCode(req.Email); err != nil {
@@ -105,6 +120,10 @@ func (h *AuthHandler) SendChangePasswordVerificationCode(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "email required"})
 		return
 	}
+	if err := h.captchaSvc.VerifyAndConsume(req.CaptchaID, req.CaptchaCode); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
 	if err := h.verificationSvc.SendChangePasswordCode(userID, req.Email); err != nil {
 		if strings.Contains(err.Error(), "发送过于频繁") {
 			c.JSON(http.StatusTooManyRequests, gin.H{"message": err.Error()})
@@ -131,6 +150,10 @@ func (h *AuthHandler) SendForgotPasswordVerificationCode(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "email required"})
 		return
 	}
+	if err := h.captchaSvc.VerifyAndConsume(req.CaptchaID, req.CaptchaCode); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
 	if err := h.verificationSvc.SendForgotPasswordCode(req.Email); err != nil {
 		if strings.Contains(err.Error(), "发送过于频繁") {
 			c.JSON(http.StatusTooManyRequests, gin.H{"message": err.Error()})
@@ -148,6 +171,27 @@ func (h *AuthHandler) SendForgotPasswordVerificationCode(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "verification code sent"})
+}
+
+func (h *AuthHandler) GetCaptcha(c *gin.Context) {
+	id, imageBase64, err := h.captchaSvc.Generate()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "generate captcha failed"})
+		return
+	}
+	imageDataURL := imageBase64
+	if !strings.HasPrefix(imageDataURL, "data:image") {
+		imageDataURL = "data:image/png;base64," + imageBase64
+	} else {
+		if parts := strings.SplitN(imageBase64, ",", 2); len(parts) == 2 {
+			imageBase64 = parts[1]
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"captchaId":    id,
+		"imageBase64":  imageBase64,
+		"imageDataUrl": imageDataURL,
+	})
 }
 
 func (h *AuthHandler) ChangePassword(c *gin.Context) {
