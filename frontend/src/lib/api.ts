@@ -1,7 +1,14 @@
 import axios from 'axios';
+import { getLocale } from '@/i18n';
 
 export const api = axios.create({
   baseURL: '/api',
+});
+
+api.interceptors.request.use((config) => {
+  config.headers = config.headers ?? {};
+  config.headers['Accept-Language'] = getLocale();
+  return config;
 });
 
 export type RegisterPayload = {

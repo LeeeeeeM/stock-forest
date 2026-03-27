@@ -4,14 +4,17 @@ import { Button, message as antdMessage } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { CaptchaVerifyModal } from '@/components/CaptchaVerifyModal';
 import { DashboardShell } from '@/components/layout/DashboardShell';
+import { useI18n } from '@/i18n/useI18n';
 import { SendCodeButton } from '@/components/SendCodeButton';
 import { changePassword, me, sendChangePasswordVerificationCode } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
+import { resolveApiError } from '@/lib/error-message';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function ChangePasswordPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const token = getAccessToken();
   const [pwdEmail, setPwdEmail] = useState('');
@@ -42,11 +45,11 @@ export function ChangePasswordPage() {
     if (!token) return;
     const e = pwdEmail.trim();
     if (!e) {
-      messageApi.warning('请先填写邮箱');
+      messageApi.warning(t('error.emailRequired'));
       return;
     }
     if (!EMAIL_RE.test(e)) {
-      messageApi.warning('邮箱格式不正确');
+      messageApi.warning(t('error.invalidEmail'));
       return;
     }
     setCaptchaModalOpen(true);
@@ -56,7 +59,7 @@ export function ChangePasswordPage() {
     if (!token) return;
     const e = pwdEmail.trim();
     await sendChangePasswordVerificationCode(token, e, captcha);
-    messageApi.success('验证码已发送到邮箱');
+    messageApi.success(t('success.codeSent'));
     setPwdCooldown(60);
     setCaptchaModalOpen(false);
   };
@@ -67,23 +70,23 @@ export function ChangePasswordPage() {
     const em = pwdEmail.trim();
     const code = pwdVerificationCode.trim();
     if (!EMAIL_RE.test(em)) {
-      messageApi.warning('邮箱格式不正确');
+      messageApi.warning(t('error.invalidEmail'));
       return;
     }
     if (!oldPassword) {
-      messageApi.warning('请输入当前密码');
+      messageApi.warning(t('error.oldPasswordRequired'));
       return;
     }
     if (newPassword.length < 6) {
-      messageApi.warning('新密码至少 6 位');
+      messageApi.warning(t('error.newPasswordMin'));
       return;
     }
     if (newPassword !== confirmNewPassword) {
-      messageApi.warning('两次输入的新密码不一致');
+      messageApi.warning(t('error.newPasswordMismatch'));
       return;
     }
     if (code.length < 4) {
-      messageApi.warning('请输入正确的邮箱验证码');
+      messageApi.warning(t('error.verificationCodeInvalid'));
       return;
     }
     try {
@@ -93,34 +96,34 @@ export function ChangePasswordPage() {
         newPassword,
         verificationCode: code,
       });
-      messageApi.success('密码已修改，请使用新密码重新登录');
+      messageApi.success(t('success.passwordChanged'));
       setOldPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
       setPwdVerificationCode('');
     } catch (err: any) {
-      messageApi.error(`修改密码失败: ${err?.response?.data?.message ?? err.message}`);
+      messageApi.error(resolveApiError(err, 'error.changePasswordFailed'));
     }
   };
 
   return (
     <DashboardShell
-      title="修改密码"
-      description="验证码将发送至当前账号绑定邮箱，修改后请重新登录。"
+      title={t('ui.change.title')}
+      description={t('ui.change.description')}
       trailing={
         <Link className="lf-link text-sm font-medium" to="/portal">
-          返回门户
+          {t('ui.portal.back')}
         </Link>
       }
     >
       {contextHolder}
       <section className="lf-panel max-w-xl">
-        <h2 className="lf-panel-title">安全验证</h2>
-        <p className="lf-panel-desc">请确认邮箱与账号一致，并完成验证码校验。</p>
+        <h2 className="lf-panel-title">{t('ui.change.securityTitle')}</h2>
+        <p className="lf-panel-desc">{t('ui.change.securityDesc')}</p>
         <form className="space-y-5" onSubmit={onSubmit}>
           <div>
             <label className="lf-field-label" htmlFor="cp-email">
-              邮箱
+              {t('ui.common.email')}
             </label>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
               <input
@@ -130,30 +133,30 @@ export function ChangePasswordPage() {
                 autoComplete="email"
                 value={pwdEmail}
                 onChange={(ev) => setPwdEmail(ev.target.value)}
-                placeholder="须与当前账号邮箱一致"
+                placeholder={t('ui.placeholder.accountEmail')}
               />
               <SendCodeButton htmlType="button" onClick={onOpenSendCodeVerify} disabled={pwdCooldown > 0}>
-                {pwdCooldown > 0 ? `${pwdCooldown}s` : '发送验证码'}
+                {pwdCooldown > 0 ? `${pwdCooldown}s` : t('ui.common.sendCode')}
               </SendCodeButton>
             </div>
           </div>
           <div>
             <label className="lf-field-label" htmlFor="cp-code">
-              邮箱验证码
+              {t('ui.register.emailCode')}
             </label>
             <input
               id="cp-code"
               className="lf-input max-w-md"
               value={pwdVerificationCode}
               onChange={(ev) => setPwdVerificationCode(ev.target.value)}
-              placeholder="6 位数字"
+              placeholder={t('ui.placeholder.code6')}
               inputMode="numeric"
               autoComplete="one-time-code"
             />
           </div>
           <div>
             <label className="lf-field-label" htmlFor="cp-old">
-              当前密码
+              {t('ui.change.currentPassword')}
             </label>
             <input
               id="cp-old"
@@ -162,12 +165,12 @@ export function ChangePasswordPage() {
               autoComplete="current-password"
               value={oldPassword}
               onChange={(ev) => setOldPassword(ev.target.value)}
-              placeholder="当前登录密码"
+              placeholder={t('ui.placeholder.currentPassword')}
             />
           </div>
           <div>
             <label className="lf-field-label" htmlFor="cp-new">
-              新密码
+              {t('ui.change.newPassword')}
             </label>
             <input
               id="cp-new"
@@ -176,12 +179,12 @@ export function ChangePasswordPage() {
               autoComplete="new-password"
               value={newPassword}
               onChange={(ev) => setNewPassword(ev.target.value)}
-              placeholder="至少 6 位"
+              placeholder={t('ui.placeholder.password6')}
             />
           </div>
           <div>
             <label className="lf-field-label" htmlFor="cp-confirm-new">
-              确认新密码
+              {t('ui.change.confirmNewPassword')}
             </label>
             <input
               id="cp-confirm-new"
@@ -190,12 +193,12 @@ export function ChangePasswordPage() {
               autoComplete="new-password"
               value={confirmNewPassword}
               onChange={(ev) => setConfirmNewPassword(ev.target.value)}
-              placeholder="请再次输入新密码"
+              placeholder={t('ui.placeholder.confirmNewPassword')}
             />
           </div>
           <div className="pt-1">
             <Button type="primary" htmlType="submit" className="min-w-[10rem]">
-              确认修改密码
+              {t('ui.change.submit')}
             </Button>
           </div>
         </form>

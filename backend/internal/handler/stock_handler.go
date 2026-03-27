@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"new-apps/backend/internal/i18n"
 	"new-apps/backend/internal/service"
 	"strings"
 
@@ -20,7 +21,7 @@ func (h *StockHandler) Search(c *gin.Context) {
 	q := c.Query("q")
 	items, err := h.quoteSvc.Search(q)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		i18n.ErrorJSON(c, http.StatusBadGateway, i18n.ErrUpstreamServiceFailed)
 		return
 	}
 	c.JSON(http.StatusOK, items)
@@ -31,7 +32,7 @@ func (h *StockHandler) Quotes(c *gin.Context) {
 	codes := strings.Split(codesRaw, ",")
 	items, err := h.quoteSvc.BatchQuotes(codes)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		i18n.ErrorJSON(c, http.StatusBadGateway, i18n.ErrUpstreamServiceFailed)
 		return
 	}
 	c.JSON(http.StatusOK, items)

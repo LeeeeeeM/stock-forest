@@ -20,6 +20,17 @@
   --lf-header-bg: rgba(2, 6, 23, 0.72);
 }
 
+:root[data-theme='light'] {
+  --lf-bg: #f8fafc;
+  --lf-text: #0f172a;
+  --lf-muted: #475569;
+  --lf-label: #334155;
+  --lf-border: rgba(15, 23, 42, 0.14);
+  --lf-accent: #0f766e;
+  --lf-accent-dim: rgba(15, 118, 110, 0.18);
+  --lf-header-bg: rgba(248, 250, 252, 0.86);
+}
+
 *,
 *::before,
 *::after {
@@ -51,6 +62,39 @@ body {
 
 .lf-page {
   color: var(--lf-text);
+}
+
+.lf-top-nav-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid var(--lf-border);
+  background: var(--lf-header-bg);
+  backdrop-filter: blur(12px);
+}
+
+.lf-top-nav {
+  margin: 0 auto;
+  display: flex;
+  min-height: 56px;
+  max-width: 72rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+}
+
+.lf-top-nav-brand {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lf-text) !important;
+}
+
+.lf-top-nav-label {
+  color: var(--lf-muted) !important;
+  font-size: 0.75rem;
 }
 
 .lf-backdrop {
@@ -101,6 +145,14 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
+:root[data-theme='light'] .lf-glass-card {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 20px 40px -22px rgba(15, 23, 42, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
 .lf-field-label {
   display: block;
   margin-bottom: 0.375rem;
@@ -125,12 +177,25 @@ body {
     background-color 0.2s ease;
 }
 
+:root[data-theme='light'] .lf-input {
+  border: 1px solid rgba(100, 116, 139, 0.45);
+  background: #ffffff;
+}
+
 .lf-input::placeholder {
   color: #64748b;
 }
 
+:root[data-theme='light'] .lf-input::placeholder {
+  color: #94a3b8;
+}
+
 .lf-input:hover {
   border-color: rgba(100, 116, 139, 0.95);
+}
+
+:root[data-theme='light'] .lf-input:hover {
+  border-color: rgba(100, 116, 139, 0.8);
 }
 
 .lf-input:focus {
@@ -138,6 +203,10 @@ body {
   border-color: var(--lf-accent);
   box-shadow: 0 0 0 3px var(--lf-accent-dim);
   background: rgba(15, 23, 42, 0.75);
+}
+
+:root[data-theme='light'] .lf-input:focus {
+  background: #ffffff;
 }
 
 .lf-link {
@@ -150,6 +219,10 @@ body {
 
 .lf-link:hover {
   color: #6ee7b7;
+}
+
+:root[data-theme='light'] .lf-link:hover {
+  color: #0f766e;
 }
 
 .lf-link:focus-visible {
@@ -194,6 +267,12 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
+:root[data-theme='light'] .lf-panel {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 24px -20px rgba(15, 23, 42, 0.18);
+}
+
 .lf-panel-title {
   margin: 0 0 0.75rem;
   font-size: 1.0625rem;
@@ -222,9 +301,19 @@ body {
     border-color 0.2s ease;
 }
 
+:root[data-theme='light'] .lf-row-card {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #ffffff;
+}
+
 .lf-row-card:hover {
   background: rgba(30, 41, 59, 0.55);
   border-color: rgba(148, 163, 184, 0.22);
+}
+
+:root[data-theme='light'] .lf-row-card:hover {
+  background: rgba(226, 232, 240, 0.45);
+  border-color: rgba(15, 23, 42, 0.18);
 }
 
 .lf-tabular {

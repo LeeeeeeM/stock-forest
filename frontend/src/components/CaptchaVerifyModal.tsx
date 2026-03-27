@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Button, Input, Modal, message } from 'antd';
 import { getCaptcha } from '@/lib/api';
+import { resolveApiError } from '@/lib/error-message';
+import { useI18n } from '@/i18n/useI18n';
 
 type Props = {
   open: boolean;
@@ -10,6 +12,7 @@ type Props = {
 
 export function CaptchaVerifyModal({ open, onCancel, onVerify }: Props) {
   const [messageApi, contextHolder] = message.useMessage();
+  const { t } = useI18n();
   const [captchaId, setCaptchaId] = useState('');
   const [captchaCode, setCaptchaCode] = useState('');
   const [captchaImage, setCaptchaImage] = useState('');
@@ -22,7 +25,7 @@ export function CaptchaVerifyModal({ open, onCancel, onVerify }: Props) {
       setCaptchaImage(data.imageDataUrl);
       setCaptchaCode('');
     } catch (err: any) {
-      messageApi.error(`加载图形验证码失败: ${err?.response?.data?.message ?? err.message}`);
+      messageApi.error(resolveApiError(err, 'error.captchaLoadFailed'));
     }
   };
 
@@ -34,14 +37,14 @@ export function CaptchaVerifyModal({ open, onCancel, onVerify }: Props) {
 
   const handleOk = async () => {
     if (!captchaId || !captchaCode.trim()) {
-      messageApi.warning('请输入图形验证码');
+      messageApi.warning(t('error.captchaRequired'));
       return;
     }
     setLoading(true);
     try {
       await onVerify({ captchaId, captchaCode: captchaCode.trim() });
     } catch (err: any) {
-      messageApi.error(err?.response?.data?.message ?? err.message ?? '验证失败，请重试');
+      messageApi.error(resolveApiError(err, 'error.captchaVerifyFailed'));
       await refreshCaptcha();
     } finally {
       setLoading(false);
@@ -53,11 +56,11 @@ export function CaptchaVerifyModal({ open, onCancel, onVerify }: Props) {
       {contextHolder}
       <Modal
         open={open}
-        title="请完成人机验证"
+        title={t('ui.modal.captcha.title')}
         onCancel={onCancel}
         footer={[
           <Button key="cancel" htmlType="button" onClick={onCancel} disabled={loading}>
-            取消
+            {t('ui.modal.captcha.cancel')}
           </Button>,
           <Button
             key="ok"
@@ -66,7 +69,7 @@ export function CaptchaVerifyModal({ open, onCancel, onVerify }: Props) {
             onClick={() => void handleOk()}
             loading={loading}
           >
-            验证并发送
+            {t('ui.modal.captcha.confirm')}
           </Button>,
         ]}
         destroyOnHidden
@@ -80,7 +83,7 @@ export function CaptchaVerifyModal({ open, onCancel, onVerify }: Props) {
                 ev.preventDefault();
                 void handleOk();
               }}
-              placeholder="请输入图片中的字符"
+              placeholder={t('ui.placeholder.captcha')}
               autoComplete="off"
             />
             <button
@@ -92,7 +95,7 @@ export function CaptchaVerifyModal({ open, onCancel, onVerify }: Props) {
               {captchaImage ? (
                 <img src={captchaImage} alt="captcha" className="h-full w-[120px] object-cover" />
               ) : (
-                <span className="text-xs text-slate-400">加载中</span>
+                <span className="text-xs text-slate-400">{t('ui.captcha.loading')}</span>
               )}
             </button>
           </div>

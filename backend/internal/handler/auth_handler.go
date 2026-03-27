@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"new-apps/backend/internal/i18n"
 	"new-apps/backend/internal/repository"
 	"new-apps/backend/internal/service"
 
@@ -71,32 +72,21 @@ type changePasswordReq struct {
 func (h *AuthHandler) SendRegisterVerificationCode(c *gin.Context) {
 	var req sendRegisterCodeReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid payload"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidPayload)
 		return
 	}
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	if req.Email == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "email required"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrEmailRequired)
 		return
 	}
 	if err := h.captchaSvc.VerifyAndConsume(req.CaptchaID, req.CaptchaCode); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidCaptcha)
 		return
 	}
 	if err := h.verificationSvc.SendRegisterCode(req.Email); err != nil {
-		if strings.Contains(err.Error(), "发送过于频繁") {
-			c.JSON(http.StatusTooManyRequests, gin.H{"message": err.Error()})
-			return
-		}
-		if strings.Contains(err.Error(), "already registered") {
-			c.JSON(http.StatusConflict, gin.H{"message": err.Error()})
-			return
-		}
-		if strings.Contains(err.Error(), "邮件未配置") {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		status, code := mapVerificationError(err)
+		i18n.ErrorJSON(c, status, code)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "verification code sent"})
@@ -105,35 +95,28 @@ func (h *AuthHandler) SendRegisterVerificationCode(c *gin.Context) {
 func (h *AuthHandler) SendChangePasswordVerificationCode(c *gin.Context) {
 	userIDAny, ok := c.Get("userID")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		i18n.ErrorJSON(c, http.StatusUnauthorized, i18n.ErrUnauthorized)
 		return
 	}
 	userID := userIDAny.(uint)
 
 	var req sendChangePasswordCodeReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid payload"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidPayload)
 		return
 	}
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	if req.Email == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "email required"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrEmailRequired)
 		return
 	}
 	if err := h.captchaSvc.VerifyAndConsume(req.CaptchaID, req.CaptchaCode); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidCaptcha)
 		return
 	}
 	if err := h.verificationSvc.SendChangePasswordCode(userID, req.Email); err != nil {
-		if strings.Contains(err.Error(), "发送过于频繁") {
-			c.JSON(http.StatusTooManyRequests, gin.H{"message": err.Error()})
-			return
-		}
-		if strings.Contains(err.Error(), "邮件未配置") {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		status, code := mapVerificationError(err)
+		i18n.ErrorJSON(c, status, code)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "verification code sent"})
@@ -142,32 +125,21 @@ func (h *AuthHandler) SendChangePasswordVerificationCode(c *gin.Context) {
 func (h *AuthHandler) SendForgotPasswordVerificationCode(c *gin.Context) {
 	var req sendChangePasswordCodeReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid payload"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidPayload)
 		return
 	}
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	if req.Email == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "email required"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrEmailRequired)
 		return
 	}
 	if err := h.captchaSvc.VerifyAndConsume(req.CaptchaID, req.CaptchaCode); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidCaptcha)
 		return
 	}
 	if err := h.verificationSvc.SendForgotPasswordCode(req.Email); err != nil {
-		if strings.Contains(err.Error(), "发送过于频繁") {
-			c.JSON(http.StatusTooManyRequests, gin.H{"message": err.Error()})
-			return
-		}
-		if strings.Contains(err.Error(), "邮件未配置") {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"message": err.Error()})
-			return
-		}
-		if strings.Contains(err.Error(), "user not found") {
-			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		status, code := mapVerificationError(err)
+		i18n.ErrorJSON(c, status, code)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "verification code sent"})
@@ -176,7 +148,7 @@ func (h *AuthHandler) SendForgotPasswordVerificationCode(c *gin.Context) {
 func (h *AuthHandler) GetCaptcha(c *gin.Context) {
 	id, imageBase64, err := h.captchaSvc.Generate()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "generate captcha failed"})
+		i18n.ErrorJSON(c, http.StatusInternalServerError, i18n.ErrGenerateCaptchaFailed)
 		return
 	}
 	imageDataURL := imageBase64
@@ -197,39 +169,39 @@ func (h *AuthHandler) GetCaptcha(c *gin.Context) {
 func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	userIDAny, ok := c.Get("userID")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		i18n.ErrorJSON(c, http.StatusUnauthorized, i18n.ErrUnauthorized)
 		return
 	}
 	userID := userIDAny.(uint)
 
 	var req changePasswordReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid payload"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidPayload)
 		return
 	}
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	if req.Email == "" || req.VerificationCode == "" || req.OldPassword == "" || req.NewPassword == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "email, verification code, old and new password required"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidPayload)
 		return
 	}
 
 	u, err := h.userRepo.FindByID(userID)
 	if err != nil || u == nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "user not found"})
+		i18n.ErrorJSON(c, http.StatusNotFound, i18n.ErrUserNotFound)
 		return
 	}
 	if strings.ToLower(strings.TrimSpace(u.Email)) != req.Email {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "email does not match account"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrEmailMismatch)
 		return
 	}
 
 	if err := h.verificationSvc.VerifyAndConsume(req.Email, service.PurposeChangePassword, req.VerificationCode); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrVerificationCodeInvalid)
 		return
 	}
 
 	if err := h.authSvc.ChangePassword(userID, req.OldPassword, req.NewPassword); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrPasswordChangeFailed)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "password updated"})
@@ -238,25 +210,25 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	var req forgotPasswordReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid payload"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidPayload)
 		return
 	}
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	req.VerificationCode = strings.TrimSpace(req.VerificationCode)
 	if req.Email == "" || req.VerificationCode == "" || req.NewPassword == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "email, verification code and new password required"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidPayload)
 		return
 	}
 	if err := h.verificationSvc.VerifyAndConsume(req.Email, service.PurposeChangePassword, req.VerificationCode); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrVerificationCodeInvalid)
 		return
 	}
 	if err := h.authSvc.ResetPasswordByEmail(req.Email, req.NewPassword); err != nil {
 		if strings.Contains(err.Error(), "user not found") {
-			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			i18n.ErrorJSON(c, http.StatusNotFound, i18n.ErrUserNotFound)
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrPasswordResetFailed)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "password updated"})
@@ -265,44 +237,52 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req registerReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid payload"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidPayload)
 		return
 	}
 	req.Username = strings.TrimSpace(req.Username)
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	req.VerificationCode = strings.TrimSpace(req.VerificationCode)
 	if req.Username == "" || req.Email == "" || len(req.Password) < 6 || req.VerificationCode == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "username, email, password (min 6) and verification code required"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidPayload)
 		return
 	}
 
 	byName, err := h.userRepo.FindByUsername(req.Username)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		i18n.ErrorJSON(c, http.StatusInternalServerError, i18n.ErrInternalServerError)
 		return
 	}
 	if byName != nil {
-		c.JSON(http.StatusConflict, gin.H{"message": "username already exists"})
+		i18n.ErrorJSON(c, http.StatusConflict, i18n.ErrUsernameExists)
 		return
 	}
 	byEmail, err := h.userRepo.FindByEmail(req.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		i18n.ErrorJSON(c, http.StatusInternalServerError, i18n.ErrInternalServerError)
 		return
 	}
 	if byEmail != nil {
-		c.JSON(http.StatusConflict, gin.H{"message": "email already exists"})
+		i18n.ErrorJSON(c, http.StatusConflict, i18n.ErrEmailExists)
 		return
 	}
 
 	if err := h.verificationSvc.VerifyAndConsume(req.Email, service.PurposeRegister, req.VerificationCode); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrVerificationCodeInvalid)
 		return
 	}
 
 	user, err := h.authSvc.Register(req.Username, req.Email, req.Password)
 	if err != nil {
-		c.JSON(http.StatusConflict, gin.H{"message": err.Error()})
+		if strings.Contains(err.Error(), "username already exists") {
+			i18n.ErrorJSON(c, http.StatusConflict, i18n.ErrUsernameExists)
+			return
+		}
+		if strings.Contains(err.Error(), "email already exists") {
+			i18n.ErrorJSON(c, http.StatusConflict, i18n.ErrEmailExists)
+			return
+		}
+		i18n.ErrorJSON(c, http.StatusConflict, i18n.ErrInternalServerError)
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{
@@ -315,17 +295,21 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req loginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid payload"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidPayload)
 		return
 	}
 	req.Username = strings.TrimSpace(req.Username)
 	if req.Username == "" || req.Password == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "username or password invalid"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrUsernamePasswordRequired)
 		return
 	}
 	user, accessToken, refreshToken, err := h.authSvc.Login(req.Username, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
+		if strings.Contains(err.Error(), "invalid credentials") {
+			i18n.ErrorJSON(c, http.StatusUnauthorized, i18n.ErrInvalidCredentials)
+			return
+		}
+		i18n.ErrorJSON(c, http.StatusUnauthorized, i18n.ErrInternalServerError)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -340,12 +324,12 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		RefreshToken string `json:"refreshToken"`
 	}
 	if err := c.ShouldBindJSON(&payload); err != nil || payload.RefreshToken == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid payload"})
+		i18n.ErrorJSON(c, http.StatusBadRequest, i18n.ErrInvalidPayload)
 		return
 	}
 	accessToken, err := h.authSvc.Refresh(payload.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
+		i18n.ErrorJSON(c, http.StatusUnauthorized, i18n.ErrInvalidRefreshToken)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"accessToken": accessToken})
@@ -354,14 +338,39 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 func (h *AuthHandler) Me(c *gin.Context) {
 	userIDAny, ok := c.Get("userID")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		i18n.ErrorJSON(c, http.StatusUnauthorized, i18n.ErrUnauthorized)
 		return
 	}
 	userID := userIDAny.(uint)
 	user, err := h.userRepo.FindByID(userID)
 	if err != nil || user == nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "user not found"})
+		i18n.ErrorJSON(c, http.StatusNotFound, i18n.ErrUserNotFound)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"id": user.ID, "username": user.Username, "email": user.Email})
+}
+
+func mapVerificationError(err error) (int, string) {
+	if err == nil {
+		return http.StatusInternalServerError, i18n.ErrInternalServerError
+	}
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "发送过于频繁"):
+		return http.StatusTooManyRequests, i18n.ErrTooManyRequests
+	case strings.Contains(msg, "already registered"):
+		return http.StatusConflict, i18n.ErrEmailExists
+	case strings.Contains(msg, "邮件未配置"),
+		strings.Contains(msg, "mail service not configured"),
+		strings.Contains(msg, "You can only send testing emails"):
+		return http.StatusServiceUnavailable, i18n.ErrMailServiceUnavailable
+	case strings.Contains(msg, "user not found"):
+		return http.StatusNotFound, i18n.ErrUserNotFound
+	case strings.Contains(msg, "email does not match account"):
+		return http.StatusBadRequest, i18n.ErrEmailMismatch
+	case strings.Contains(msg, "invalid or expired verification code"):
+		return http.StatusBadRequest, i18n.ErrVerificationCodeInvalid
+	default:
+		return http.StatusBadRequest, i18n.ErrInvalidPayload
+	}
 }

@@ -14,6 +14,7 @@ import {
   type WatchlistItem,
 } from '@/lib/api';
 import { clearAccessToken, getAccessToken } from '@/lib/auth';
+import { resolveApiError } from '@/lib/error-message';
 
 function toNumberSafe(value?: string) {
   if (!value) return 0;
@@ -91,7 +92,7 @@ export function PortalPage() {
       const data = await searchStocks(q);
       setSearchResults(data.slice(0, 20));
     } catch (err: any) {
-      messageApi.error(`搜索失败: ${err?.response?.data?.message ?? err.message}`);
+      messageApi.error(resolveApiError(err, 'error.searchFailed'));
     } finally {
       setSearchLoading(false);
     }
@@ -106,7 +107,7 @@ export function PortalPage() {
       });
       setWatchlist((prev) => [created, ...prev]);
     } catch (err: any) {
-      messageApi.error(`加自选失败: ${err?.response?.data?.message ?? err.message}`);
+      messageApi.error(resolveApiError(err, 'error.addWatchlistFailed'));
     }
   };
 
@@ -115,7 +116,7 @@ export function PortalPage() {
       await removeWatchlist(token, id);
       setWatchlist((prev) => prev.filter((x) => x.id !== id));
     } catch (err: any) {
-      messageApi.error(`删除自选失败: ${err?.response?.data?.message ?? err.message}`);
+      messageApi.error(resolveApiError(err, 'error.removeWatchlistFailed'));
     }
   };
 
@@ -179,7 +180,7 @@ export function PortalPage() {
           onSelect={onSelectSearch}
           placeholder="输入代码或名称开始搜索"
           notFoundContent={searchLoading ? '搜索中…' : '暂无结果'}
-          popupClassName="lf-select-dropdown"
+          classNames={{ popup: { root: 'lf-select-dropdown' } }}
         />
       </section>
 

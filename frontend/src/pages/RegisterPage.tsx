@@ -4,13 +4,16 @@ import { Button, message as antdMessage } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { CaptchaVerifyModal } from '@/components/CaptchaVerifyModal';
 import { AuthShell } from '@/components/layout/AuthShell';
+import { useI18n } from '@/i18n/useI18n';
 import { SendCodeButton } from '@/components/SendCodeButton';
 import { register, sendRegisterVerificationCode } from '@/lib/api';
+import { resolveApiError } from '@/lib/error-message';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function RegisterPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -29,11 +32,11 @@ export function RegisterPage() {
   const onOpenSendCodeVerify = () => {
     const e = email.trim();
     if (!e) {
-      messageApi.warning('请先填写邮箱');
+      messageApi.warning(t('error.emailRequired'));
       return;
     }
     if (!EMAIL_RE.test(e)) {
-      messageApi.warning('邮箱格式不正确');
+      messageApi.warning(t('error.invalidEmail'));
       return;
     }
     setCaptchaModalOpen(true);
@@ -42,9 +45,7 @@ export function RegisterPage() {
   const onVerifyAndSendCode = async (captcha: { captchaId: string; captchaCode: string }) => {
     const e = email.trim();
     await sendRegisterVerificationCode(e, captcha);
-    messageApi.success(
-      '验证码已发送，请查收邮箱',
-    );
+    messageApi.success(t('success.codeSent'));
     setCooldown(60);
     setCaptchaModalOpen(false);
   };
@@ -55,23 +56,23 @@ export function RegisterPage() {
     const em = email.trim();
     const code = verificationCode.trim();
     if (!u) {
-      messageApi.warning('用户名不能为空');
+      messageApi.warning(t('error.usernameRequired'));
       return;
     }
     if (!EMAIL_RE.test(em)) {
-      messageApi.warning('邮箱格式不正确');
+      messageApi.warning(t('error.invalidEmail'));
       return;
     }
     if (password.length < 6) {
-      messageApi.warning('密码至少 6 位');
+      messageApi.warning(t('error.passwordMin'));
       return;
     }
     if (password !== confirmPassword) {
-      messageApi.warning('两次输入的密码不一致');
+      messageApi.warning(t('error.passwordMismatch'));
       return;
     }
     if (code.length < 4) {
-      messageApi.warning('请输入正确的邮箱验证码');
+      messageApi.warning(t('error.verificationCodeInvalid'));
       return;
     }
     try {
@@ -81,20 +82,20 @@ export function RegisterPage() {
         password,
         verificationCode: code,
       });
-      messageApi.success(`注册成功: ${data.username} (${data.email})`);
+      messageApi.success(`${t('success.register')}: ${data.username} (${data.email})`);
       setTimeout(() => navigate('/login', { replace: true }), 500);
     } catch (err: any) {
-      messageApi.error(`注册失败: ${err?.response?.data?.message ?? err.message}`);
+      messageApi.error(resolveApiError(err, 'error.registerFailed'));
     }
   };
 
   return (
     <AuthShell
-      title="创建账号"
-      subtitle="使用邮箱验证码完成注册"
+      title={t('ui.register.title')}
+      subtitle={t('ui.register.subtitle')}
       footer={
         <p className="text-slate-400">
-          已有账号？<Link className="lf-link" to="/login">登录</Link>
+          {t('ui.auth.haveAccount')}<Link className="lf-link" to="/login">{t('ui.auth.login')}</Link>
         </p>
       }
     >
@@ -102,7 +103,7 @@ export function RegisterPage() {
       <form className="space-y-5" onSubmit={onSubmit}>
         <div>
           <label className="lf-field-label" htmlFor="reg-username">
-            用户名
+            {t('ui.common.username')}
           </label>
           <input
             id="reg-username"
@@ -111,12 +112,12 @@ export function RegisterPage() {
             autoComplete="username"
             value={username}
             onChange={(ev) => setUsername(ev.target.value)}
-            placeholder="用户名"
+            placeholder={t('ui.placeholder.username')}
           />
         </div>
         <div>
           <label className="lf-field-label" htmlFor="reg-email">
-            邮箱
+            {t('ui.common.email')}
           </label>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
             <input
@@ -127,7 +128,7 @@ export function RegisterPage() {
               autoComplete="email"
               value={email}
               onChange={(ev) => setEmail(ev.target.value)}
-              placeholder="you@example.com"
+              placeholder={t('ui.placeholder.email')}
             />
             <SendCodeButton
               htmlType="button"
@@ -135,18 +136,18 @@ export function RegisterPage() {
               onClick={onOpenSendCodeVerify}
               disabled={cooldown > 0}
             >
-              {cooldown > 0 ? `${cooldown}s` : '发送验证码'}
+              {cooldown > 0 ? `${cooldown}s` : t('ui.common.sendCode')}
             </SendCodeButton>
           </div>
         </div>
         <div>
           <label className="lf-field-label" htmlFor="reg-code">
-            邮箱验证码
+            {t('ui.register.emailCode')}
           </label>
           <input
             id="reg-code"
             className="lf-input"
-            placeholder="6 位数字"
+            placeholder={t('ui.placeholder.code6')}
             inputMode="numeric"
             autoComplete="one-time-code"
             value={verificationCode}
@@ -155,7 +156,7 @@ export function RegisterPage() {
         </div>
         <div>
           <label className="lf-field-label" htmlFor="reg-password">
-            密码
+            {t('ui.common.password')}
           </label>
           <input
             id="reg-password"
@@ -165,12 +166,12 @@ export function RegisterPage() {
             autoComplete="new-password"
             value={password}
             onChange={(ev) => setPassword(ev.target.value)}
-            placeholder="至少 6 位"
+            placeholder={t('ui.placeholder.password6')}
           />
         </div>
         <div>
           <label className="lf-field-label" htmlFor="reg-confirm-password">
-            确认密码
+            {t('ui.register.confirmPassword')}
           </label>
           <input
             id="reg-confirm-password"
@@ -179,15 +180,15 @@ export function RegisterPage() {
             autoComplete="new-password"
             value={confirmPassword}
             onChange={(ev) => setConfirmPassword(ev.target.value)}
-            placeholder="请再次输入密码"
+            placeholder={t('ui.placeholder.confirmPassword')}
           />
         </div>
         <div className="flex flex-wrap gap-2 pt-1">
           <Button type="primary" htmlType="submit" className="min-w-[7rem]">
-            注册
+            {t('ui.register.submit')}
           </Button>
           <Button type="default" onClick={() => navigate('/login')}>
-            去登录
+            {t('ui.auth.login')}
           </Button>
         </div>
       </form>

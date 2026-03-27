@@ -3,11 +3,14 @@ import type { FormEvent } from 'react';
 import { Button, message as antdMessage } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthShell } from '@/components/layout/AuthShell';
+import { useI18n } from '@/i18n/useI18n';
 import { login } from '@/lib/api';
 import { setAccessToken } from '@/lib/auth';
+import { resolveApiError } from '@/lib/error-message';
 
 export function LoginPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -19,21 +22,21 @@ export function LoginPage() {
       setAccessToken(data.accessToken);
       navigate('/portal', { replace: true });
     } catch (err: any) {
-      messageApi.error(`登录失败: ${err?.response?.data?.message ?? err.message}`);
+      messageApi.error(resolveApiError(err, 'error.loginFailed'));
     }
   };
 
   return (
     <AuthShell
-      title="欢迎回来"
-      subtitle="登录后继续查看自选与行情"
+      title={t('ui.login.title')}
+      subtitle={t('ui.login.subtitle')}
       footer={
         <>
           <p className="text-slate-400">
-            没有账号？<Link className="lf-link" to="/register">注册</Link>
+            {t('ui.login.noAccount')}<Link className="lf-link" to="/register">{t('ui.login.toRegister')}</Link>
           </p>
           <p className="text-slate-400">
-            忘记密码？<Link className="lf-link" to="/forgot-password">邮箱重置</Link>
+            {t('ui.login.forgotPassword')}<Link className="lf-link" to="/forgot-password">{t('ui.login.emailReset')}</Link>
           </p>
         </>
       }
@@ -42,7 +45,7 @@ export function LoginPage() {
       <form className="space-y-5" onSubmit={onSubmit}>
         <div>
           <label className="lf-field-label" htmlFor="login-username">
-            用户名
+            {t('ui.login.username')}
           </label>
           <input
             id="login-username"
@@ -51,12 +54,12 @@ export function LoginPage() {
             autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="用户名"
+            placeholder={t('ui.placeholder.username')}
           />
         </div>
         <div>
           <label className="lf-field-label" htmlFor="login-password">
-            密码
+            {t('ui.login.password')}
           </label>
           <input
             id="login-password"
@@ -66,15 +69,15 @@ export function LoginPage() {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="密码"
+            placeholder={t('ui.login.password')}
           />
         </div>
         <div className="flex flex-wrap gap-2 pt-1">
           <Button type="primary" htmlType="submit" className="min-w-[7rem]">
-            登录
+            {t('ui.login.submit')}
           </Button>
           <Button type="default" onClick={() => navigate('/register')}>
-            去注册
+            {t('ui.login.toRegister')}
           </Button>
         </div>
       </form>
