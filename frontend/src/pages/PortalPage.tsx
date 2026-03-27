@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AutoComplete, Button, message as antdMessage } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { DashboardShell } from '@/components/layout/DashboardShell';
+import { useI18n } from '@/i18n/useI18n';
 import {
   addWatchlist,
   getWatchlistQuotes,
@@ -40,6 +41,7 @@ function formatPercent(percent?: string) {
 
 export function PortalPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ id: number; username: string; email: string } | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -146,21 +148,21 @@ export function PortalPage() {
       <span className="tabular-nums">{profile.email}</span>
     </span>
   ) : (
-    <span className="text-sm text-slate-500">加载中…</span>
+    <span className="text-sm text-slate-500">{t('ui.portal.loading')}</span>
   );
 
   return (
     <DashboardShell
-      title="自选门户"
-      description="搜索标的并加入自选，列表每 3 秒刷新一次行情。"
+      title={t('ui.portal.title')}
+      description={t('ui.portal.description')}
       trailing={
         <>
           {userLine}
           <Link className="lf-link text-sm font-medium" to="/change-password">
-            修改密码
+            {t('ui.portal.changePassword')}
           </Link>
           <Button type="primary" danger ghost onClick={onLogout}>
-            退出登录
+            {t('ui.portal.logout')}
           </Button>
         </>
       }
@@ -168,9 +170,9 @@ export function PortalPage() {
       {contextHolder}
 
       <section className="lf-panel mb-8">
-        <h2 className="lf-panel-title">搜索股票</h2>
+        <h2 className="lf-panel-title">{t('ui.portal.searchTitle')}</h2>
         <p className="lf-panel-desc">
-          支持关键词或代码；从下拉中选择一项即可加入自选（例如：茅台 / sh600519 / aapl / hk01810）。
+          {t('ui.portal.searchDesc')}
         </p>
         <AutoComplete
           className="w-full [&_.ant-select-selector]:min-h-10 [&_.ant-select-selector]:px-3 [&_.ant-select-selector]:py-1"
@@ -178,15 +180,15 @@ export function PortalPage() {
           options={searchOptions}
           onSearch={onSearchKeyword}
           onSelect={onSelectSearch}
-          placeholder="输入代码或名称开始搜索"
-          notFoundContent={searchLoading ? '搜索中…' : '暂无结果'}
+          placeholder={t('ui.portal.searchPlaceholder')}
+          notFoundContent={searchLoading ? t('ui.portal.searching') : t('ui.portal.noResults')}
           classNames={{ popup: { root: 'lf-select-dropdown' } }}
         />
       </section>
 
       <section className="lf-panel">
-        <h2 className="lf-panel-title">我的自选</h2>
-        <p className="lf-panel-desc">实时刷新：约每 3 秒拉取一次行情数据。</p>
+        <h2 className="lf-panel-title">{t('ui.portal.watchlistTitle')}</h2>
+        <p className="lf-panel-desc">{t('ui.portal.watchlistDesc')}</p>
         <div className="space-y-3">
           {watchlist.map((item) => {
             const q = quoteMap.get(item.code.toLowerCase());
@@ -211,19 +213,19 @@ export function PortalPage() {
                     </div>
                   </div>
                   <div className="lf-tabular text-xs text-slate-500">
-                    <div>高 {q?.high ?? '—'}</div>
-                    <div>低 {q?.low ?? '—'}</div>
+                    <div>{t('ui.portal.high')} {q?.high ?? '—'}</div>
+                    <div>{t('ui.portal.low')} {q?.low ?? '—'}</div>
                   </div>
                 </div>
                 <Button danger type="default" onClick={() => onRemoveWatch(item.id)}>
-                  删除
+                  {t('ui.portal.delete')}
                 </Button>
               </div>
             );
           })}
           {watchlist.length === 0 ? (
             <p className="rounded-lg border border-dashed border-slate-600/60 bg-slate-900/30 py-10 text-center text-sm text-slate-500">
-              暂无自选，使用上方搜索添加标的
+              {t('ui.portal.emptyWatchlist')}
             </p>
           ) : null}
         </div>
