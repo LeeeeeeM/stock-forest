@@ -1,7 +1,7 @@
 package database
 
 import (
-	"new-apps/backend/internal/model"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/model"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

@@ -2,7 +2,7 @@ package repository
 
 import (
 	"errors"
-	"new-apps/backend/internal/model"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/model"
 
 	"gorm.io/gorm"
 )

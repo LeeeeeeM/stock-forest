@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"new-apps/backend/internal/model"
-	"new-apps/backend/internal/repository"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/model"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/repository"
 	"strings"
 	"time"
 

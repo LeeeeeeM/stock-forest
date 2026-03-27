@@ -3,9 +3,9 @@ package router
 import (
 	"net/http"
 
-	"new-apps/backend/internal/handler"
-	"new-apps/backend/internal/middleware"
-	"new-apps/backend/internal/service"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/handler"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/middleware"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

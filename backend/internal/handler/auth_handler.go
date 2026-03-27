@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"new-apps/backend/internal/i18n"
-	"new-apps/backend/internal/repository"
-	"new-apps/backend/internal/service"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/i18n"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/repository"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

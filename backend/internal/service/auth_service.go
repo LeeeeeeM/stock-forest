@@ -2,8 +2,8 @@ package service
 
 import (
 	"errors"
-	"new-apps/backend/internal/model"
-	"new-apps/backend/internal/repository"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/model"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/repository"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"

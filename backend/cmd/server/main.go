@@ -3,12 +3,12 @@ package main
 import (
 	"log"
 
-	"new-apps/backend/internal/config"
-	"new-apps/backend/internal/database"
-	"new-apps/backend/internal/handler"
-	"new-apps/backend/internal/repository"
-	"new-apps/backend/internal/router"
-	"new-apps/backend/internal/service"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/config"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/database"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/handler"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/repository"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/router"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

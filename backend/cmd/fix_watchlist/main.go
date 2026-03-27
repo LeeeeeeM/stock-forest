@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 
-	"new-apps/backend/internal/config"
-	"new-apps/backend/internal/database"
-	"new-apps/backend/internal/model"
-	"new-apps/backend/internal/service"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/config"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/database"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/model"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/service"
 )
 
 func main() {
