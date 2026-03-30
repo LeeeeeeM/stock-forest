@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -224,7 +225,7 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 	if err := h.authSvc.ResetPasswordByEmail(req.Email, req.NewPassword); err != nil {
-		if strings.Contains(err.Error(), "user not found") {
+		if errors.Is(err, service.ErrUserNotFound) {
 			i18n.ErrorJSON(c, http.StatusNotFound, i18n.ErrUserNotFound)
 			return
 		}
@@ -274,11 +275,11 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	user, err := h.authSvc.Register(req.Username, req.Email, req.Password)
 	if err != nil {
-		if strings.Contains(err.Error(), "username already exists") {
+		if errors.Is(err, service.ErrUsernameAlreadyExists) {
 			i18n.ErrorJSON(c, http.StatusConflict, i18n.ErrUsernameExists)
 			return
 		}
-		if strings.Contains(err.Error(), "email already exists") {
+		if errors.Is(err, service.ErrEmailAlreadyExists) {
 			i18n.ErrorJSON(c, http.StatusConflict, i18n.ErrEmailExists)
 			return
 		}
@@ -305,7 +306,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 	user, accessToken, refreshToken, err := h.authSvc.Login(req.Username, req.Password)
 	if err != nil {
-		if strings.Contains(err.Error(), "invalid credentials") {
+		if errors.Is(err, service.ErrInvalidCredentials) {
 			i18n.ErrorJSON(c, http.StatusUnauthorized, i18n.ErrInvalidCredentials)
 			return
 		}
@@ -354,23 +355,20 @@ func mapVerificationError(err error) (int, string) {
 	if err == nil {
 		return http.StatusInternalServerError, i18n.ErrInternalServerError
 	}
-	msg := err.Error()
 	switch {
-	case strings.Contains(msg, "发送过于频繁"):
+	case errors.Is(err, service.ErrTooManyRequests):
 		return http.StatusTooManyRequests, i18n.ErrTooManyRequests
-	case strings.Contains(msg, "already registered"):
+	case errors.Is(err, service.ErrEmailAlreadyExists):
 		return http.StatusConflict, i18n.ErrEmailExists
-	case strings.Contains(msg, "邮件未配置"),
-		strings.Contains(msg, "mail service not configured"),
-		strings.Contains(msg, "You can only send testing emails"):
+	case errors.Is(err, service.ErrMailServiceUnavailable):
 		return http.StatusServiceUnavailable, i18n.ErrMailServiceUnavailable
-	case strings.Contains(msg, "user not found"):
+	case errors.Is(err, service.ErrUserNotFound):
 		return http.StatusNotFound, i18n.ErrUserNotFound
-	case strings.Contains(msg, "email does not match account"):
+	case errors.Is(err, service.ErrEmailMismatch):
 		return http.StatusBadRequest, i18n.ErrEmailMismatch
-	case strings.Contains(msg, "invalid or expired verification code"):
+	case errors.Is(err, service.ErrVerificationCodeInvalid):
 		return http.StatusBadRequest, i18n.ErrVerificationCodeInvalid
 	default:
-		return http.StatusBadRequest, i18n.ErrInvalidPayload
+		return http.StatusInternalServerError, i18n.ErrInternalServerError
 	}
 }

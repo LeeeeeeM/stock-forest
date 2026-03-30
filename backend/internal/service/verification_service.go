@@ -2,7 +2,6 @@ package service
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"math/big"
 	"github.com/LeeeeeeM/stock-forest/backend/internal/model"
@@ -38,14 +37,14 @@ func NewVerificationService(
 func (s *VerificationService) SendRegisterCode(email string) error {
 	email = strings.TrimSpace(strings.ToLower(email))
 	if email == "" {
-		return errors.New("email required")
+		return ErrEmailRequired
 	}
 	u, err := s.userRepo.FindByEmail(email)
 	if err != nil {
 		return err
 	}
 	if u != nil {
-		return errors.New("email already registered")
+		return ErrEmailAlreadyExists
 	}
 	return s.sendCode(email, PurposeRegister, "注册验证码", "您正在注册账号，验证码为：")
 }
@@ -53,17 +52,17 @@ func (s *VerificationService) SendRegisterCode(email string) error {
 func (s *VerificationService) SendChangePasswordCode(userID uint, email string) error {
 	email = strings.TrimSpace(strings.ToLower(email))
 	if email == "" {
-		return errors.New("email required")
+		return ErrEmailRequired
 	}
 	u, err := s.userRepo.FindByID(userID)
 	if err != nil {
 		return err
 	}
 	if u == nil {
-		return errors.New("user not found")
+		return ErrUserNotFound
 	}
 	if strings.ToLower(strings.TrimSpace(u.Email)) != email {
-		return errors.New("email does not match account")
+		return ErrEmailMismatch
 	}
 	return s.sendCode(email, PurposeChangePassword, "修改密码验证码", "您正在修改登录密码，验证码为：")
 }
@@ -71,21 +70,21 @@ func (s *VerificationService) SendChangePasswordCode(userID uint, email string) 
 func (s *VerificationService) SendForgotPasswordCode(email string) error {
 	email = strings.TrimSpace(strings.ToLower(email))
 	if email == "" {
-		return errors.New("email required")
+		return ErrEmailRequired
 	}
 	u, err := s.userRepo.FindByEmail(email)
 	if err != nil {
 		return err
 	}
 	if u == nil {
-		return errors.New("user not found")
+		return ErrUserNotFound
 	}
 	return s.sendCode(email, PurposeChangePassword, "重置密码验证码", "您正在重置登录密码，验证码为：")
 }
 
 func (s *VerificationService) sendCode(email, purpose, subject, intro string) error {
 	if !s.mail.Configured() {
-		return errors.New("邮件未配置：请设置环境变量 RESEND_API_KEY（将 re_xxxxxxxxx 换成真实 Key）和 RESEND_FROM_EMAIL")
+		return ErrMailServiceUnavailable
 	}
 	lastAt, ok, err := s.evRepo.LastCreatedAt(email, purpose)
 	if err != nil {
@@ -97,7 +96,7 @@ func (s *VerificationService) sendCode(email, purpose, subject, intro string) er
 		if sec < 1 {
 			sec = 1
 		}
-		return fmt.Errorf("发送过于频繁，请 %d 秒后再试", sec)
+		return fmt.Errorf("%w: retry after %d seconds", ErrTooManyRequests, sec)
 	}
 	plain, err := randomDigits(verificationCodeDigits)
 	if err != nil {
@@ -119,7 +118,7 @@ func (s *VerificationService) sendCode(email, purpose, subject, intro string) er
 	html := fmt.Sprintf("<p>%s</p><p style=\"font-size:24px;font-weight:bold;letter-spacing:4px;\">%s</p><p>验证码 %d 分钟内有效，请勿泄露给他人。</p>", intro, plain, int(codeTTL.Minutes()))
 	if _, err := s.mail.SendHTML([]string{email}, subject, html); err != nil {
 		_ = s.evRepo.DeleteByID(rec.ID)
-		return err
+		return fmt.Errorf("%w: %v", ErrMailServiceUnavailable, err)
 	}
 	return nil
 }
@@ -128,17 +127,17 @@ func (s *VerificationService) VerifyAndConsume(email, purpose, plainCode string)
 	email = strings.TrimSpace(strings.ToLower(email))
 	plainCode = strings.TrimSpace(plainCode)
 	if email == "" || plainCode == "" {
-		return errors.New("email and verification code required")
+		return ErrVerificationCodeInvalid
 	}
 	v, err := s.evRepo.FindLatestUnused(email, purpose)
 	if err != nil {
 		return err
 	}
 	if v == nil {
-		return errors.New("invalid or expired verification code")
+		return ErrVerificationCodeInvalid
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(v.CodeHash), []byte(plainCode)); err != nil {
-		return errors.New("invalid or expired verification code")
+		return ErrVerificationCodeInvalid
 	}
 	return s.evRepo.MarkUsed(v.ID)
 }

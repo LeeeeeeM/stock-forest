@@ -38,7 +38,7 @@ func (s *AuthService) Register(username, email, password string) (*model.User, e
 		return nil, err
 	}
 	if existByUsername != nil {
-		return nil, errors.New("username already exists")
+		return nil, ErrUsernameAlreadyExists
 	}
 
 	exist, err := s.repo.FindByEmail(email)
@@ -46,7 +46,7 @@ func (s *AuthService) Register(username, email, password string) (*model.User, e
 		return nil, err
 	}
 	if exist != nil {
-		return nil, errors.New("email already exists")
+		return nil, ErrEmailAlreadyExists
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -69,10 +69,10 @@ func (s *AuthService) Login(username, password string) (*model.User, string, str
 		return nil, "", "", err
 	}
 	if user == nil {
-		return nil, "", "", errors.New("invalid credentials")
+		return nil, "", "", ErrInvalidCredentials
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		return nil, "", "", errors.New("invalid credentials")
+		return nil, "", "", ErrInvalidCredentials
 	}
 	accessToken, err := s.signToken(user.ID, s.accessSecret, time.Minute*time.Duration(s.accessExpireMin))
 	if err != nil {
@@ -88,7 +88,7 @@ func (s *AuthService) Login(username, password string) (*model.User, string, str
 func (s *AuthService) Refresh(refreshToken string) (string, error) {
 	userID, err := s.parseToken(refreshToken, s.refreshSecret)
 	if err != nil {
-		return "", errors.New("invalid refresh token")
+		return "", ErrInvalidRefreshToken
 	}
 	return s.signToken(userID, s.accessSecret, time.Minute*time.Duration(s.accessExpireMin))
 }
@@ -106,7 +106,7 @@ func (s *AuthService) ChangePassword(userID uint, oldPassword, newPassword strin
 		return err
 	}
 	if u == nil {
-		return errors.New("user not found")
+		return ErrUserNotFound
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(oldPassword)); err != nil {
 		return errors.New("invalid old password")
@@ -127,7 +127,7 @@ func (s *AuthService) ResetPasswordByEmail(email, newPassword string) error {
 		return err
 	}
 	if u == nil {
-		return errors.New("user not found")
+		return ErrUserNotFound
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
