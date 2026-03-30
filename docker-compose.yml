@@ -17,6 +17,33 @@ services:
       timeout: 3s
       retries: 20
 
+  app:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    container_name: new-apps-app
+    restart: unless-stopped
+    environment:
+      APP_PORT: "8080"
+      GIN_MODE: "release"
+      TRUSTED_PROXIES: "127.0.0.1,::1"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: app_user
+      DB_PASSWORD: app_pass
+      DB_NAME: app_db
+      DB_SSLMODE: disable
+      DB_TIMEZONE: Asia/Shanghai
+      JWT_ACCESS_SECRET: replace-with-access-secret
+      JWT_REFRESH_SECRET: replace-with-refresh-secret
+      JWT_ACCESS_EXPIRE_MINUTES: "30"
+      JWT_REFRESH_EXPIRE_HOURS: "168"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5173:80"
+
 volumes:
   postgres_data:
 
