@@ -5,6 +5,8 @@
 在 `new-apps` 目录执行：
 
 ```bash
+cp .env.example .env
+# 编辑 .env，填入你自己的密钥（尤其是 JWT_* / DB_PASSWORD / RESEND_API_KEY）
 docker compose up -d --build
 ```
 
