@@ -27,6 +27,7 @@ func main() {
 	}
 
 	userRepo := repository.NewUserRepository(db)
+	loginHistoryRepo := repository.NewLoginHistoryRepository(db)
 	evRepo := repository.NewEmailVerificationRepository(db)
 	watchlistRepo := repository.NewWatchlistRepository(db)
 	authSvc := service.NewAuthService(
@@ -40,7 +41,7 @@ func main() {
 	verificationSvc := service.NewVerificationService(mailSvc, evRepo, userRepo)
 	captchaSvc := service.NewCaptchaService()
 	quoteSvc := service.NewQuoteService()
-	authHandler := handler.NewAuthHandler(authSvc, userRepo, verificationSvc, captchaSvc)
+	authHandler := handler.NewAuthHandler(authSvc, userRepo, loginHistoryRepo, verificationSvc, captchaSvc)
 	stockHandler := handler.NewStockHandler(quoteSvc)
 	watchlistHandler := handler.NewWatchlistHandler(watchlistRepo, quoteSvc)
 	r := router.New(authHandler, stockHandler, watchlistHandler, authSvc)

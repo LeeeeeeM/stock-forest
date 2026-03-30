@@ -3,6 +3,7 @@ import { ChangePasswordPage } from '@/pages/ChangePasswordPage';
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { PortalPage } from '@/pages/PortalPage';
+import { ProfilePage } from '@/pages/ProfilePage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { getAccessToken } from '@/lib/auth';
 
@@ -32,6 +33,14 @@ export default function App() {
         element={
           <RequireAuth>
             <ChangePasswordPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <RequireAuth>
+            <ProfilePage />
           </RequireAuth>
         }
       />

@@ -2,10 +2,12 @@ package handler
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/LeeeeeeM/stock-forest/backend/internal/i18n"
+	"github.com/LeeeeeeM/stock-forest/backend/internal/model"
 	"github.com/LeeeeeeM/stock-forest/backend/internal/repository"
 	"github.com/LeeeeeeM/stock-forest/backend/internal/service"
 
@@ -13,23 +15,26 @@ import (
 )
 
 type AuthHandler struct {
-	authSvc         *service.AuthService
-	userRepo        *repository.UserRepository
-	verificationSvc *service.VerificationService
-	captchaSvc      *service.CaptchaService
+	authSvc          *service.AuthService
+	userRepo         *repository.UserRepository
+	loginHistoryRepo *repository.LoginHistoryRepository
+	verificationSvc  *service.VerificationService
+	captchaSvc       *service.CaptchaService
 }
 
 func NewAuthHandler(
 	authSvc *service.AuthService,
 	userRepo *repository.UserRepository,
+	loginHistoryRepo *repository.LoginHistoryRepository,
 	verificationSvc *service.VerificationService,
 	captchaSvc *service.CaptchaService,
 ) *AuthHandler {
 	return &AuthHandler{
-		authSvc:         authSvc,
-		userRepo:        userRepo,
-		verificationSvc: verificationSvc,
-		captchaSvc:      captchaSvc,
+		authSvc:          authSvc,
+		userRepo:         userRepo,
+		loginHistoryRepo: loginHistoryRepo,
+		verificationSvc:  verificationSvc,
+		captchaSvc:       captchaSvc,
 	}
 }
 
@@ -313,10 +318,59 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		i18n.ErrorJSON(c, http.StatusUnauthorized, i18n.ErrInternalServerError)
 		return
 	}
+	if h.loginHistoryRepo != nil {
+		if saveErr := h.loginHistoryRepo.Create(&model.LoginHistory{
+			UserID:    user.ID,
+			IP:        strings.TrimSpace(c.ClientIP()),
+			UserAgent: truncateString(strings.TrimSpace(c.GetHeader("User-Agent")), 512),
+		}); saveErr != nil {
+			log.Printf("save login history failed: user=%d err=%v", user.ID, saveErr)
+		}
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"user":         gin.H{"id": user.ID, "username": user.Username, "email": user.Email},
 		"accessToken":  accessToken,
 		"refreshToken": refreshToken,
+	})
+}
+
+func (h *AuthHandler) Profile(c *gin.Context) {
+	userIDAny, ok := c.Get("userID")
+	if !ok {
+		i18n.ErrorJSON(c, http.StatusUnauthorized, i18n.ErrUnauthorized)
+		return
+	}
+	userID := userIDAny.(uint)
+	user, err := h.userRepo.FindByID(userID)
+	if err != nil || user == nil {
+		i18n.ErrorJSON(c, http.StatusNotFound, i18n.ErrUserNotFound)
+		return
+	}
+
+	recent, err := h.loginHistoryRepo.ListRecentByUserID(userID, 3)
+	if err != nil {
+		i18n.ErrorJSON(c, http.StatusInternalServerError, i18n.ErrInternalServerError)
+		return
+	}
+	type loginItem struct {
+		LoginAt   string `json:"loginAt"`
+		IP        string `json:"ip"`
+		UserAgent string `json:"userAgent"`
+	}
+	items := make([]loginItem, 0, len(recent))
+	for _, v := range recent {
+		items = append(items, loginItem{
+			LoginAt:   v.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+			IP:        v.IP,
+			UserAgent: v.UserAgent,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":           user.ID,
+		"username":     user.Username,
+		"email":        user.Email,
+		"recentLogins": items,
 	})
 }
 
@@ -371,4 +425,11 @@ func mapVerificationError(err error) (int, string) {
 	default:
 		return http.StatusInternalServerError, i18n.ErrInternalServerError
 	}
+}
+
+func truncateString(s string, max int) string {
+	if max <= 0 || len(s) <= max {
+		return s
+	}
+	return s[:max]
 }

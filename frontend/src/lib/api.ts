@@ -104,6 +104,26 @@ export async function me(token: string) {
   return res.data as { id: number; username: string; email: string };
 }
 
+export type ProfileLoginItem = {
+  loginAt: string;
+  ip: string;
+  userAgent: string;
+};
+
+export type ProfileData = {
+  id: number;
+  username: string;
+  email: string;
+  recentLogins: ProfileLoginItem[];
+};
+
+export async function profile(token: string) {
+  const res = await api.get('/auth/profile', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data as ProfileData;
+}
+
 export type SearchItem = {
   code: string;
   name: string;
@@ -172,4 +192,3 @@ export async function getWatchlistQuotes(token: string) {
   });
   return res.data;
 }
-

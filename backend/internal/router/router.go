@@ -36,6 +36,7 @@ func New(
 		auth.POST("/forgot-password", authHandler.ForgotPassword)
 		auth.POST("/change-password", middleware.AuthRequired(authSvc), authHandler.ChangePassword)
 		auth.GET("/me", middleware.AuthRequired(authSvc), authHandler.Me)
+		auth.GET("/profile", middleware.AuthRequired(authSvc), authHandler.Profile)
 
 		api.GET("/stocks/search", stockHandler.Search)
 		api.GET("/stocks/quotes", stockHandler.Quotes)

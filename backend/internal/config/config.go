@@ -2,16 +2,17 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	AppPort string
-	GinMode string
+	AppPort        string
+	GinMode        string
 	TrustedProxies []string
 
 	DBHost     string
@@ -75,6 +76,19 @@ func (c *Config) DSN() string {
 	return fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s",
 		c.DBHost, c.DBUser, c.DBPassword, c.DBName, c.DBPort, c.DBSSLMode, c.DBTimezone,
+	)
+}
+
+func (c *Config) DatabaseURL() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s&TimeZone=%s",
+		url.QueryEscape(c.DBUser),
+		url.QueryEscape(c.DBPassword),
+		c.DBHost,
+		c.DBPort,
+		c.DBName,
+		url.QueryEscape(c.DBSSLMode),
+		url.QueryEscape(c.DBTimezone),
 	)
 }
 

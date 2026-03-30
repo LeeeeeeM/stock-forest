@@ -142,9 +142,9 @@ export function PortalPage() {
   };
 
   const userLine = profile ? (
-    <span className="max-w-[min(100%,20rem)] truncate text-sm text-slate-400 sm:max-w-[28rem]">
-      <span className="font-medium text-slate-200">{profile.username}</span>
-      <span className="mx-1.5 text-slate-600">·</span>
+    <span className="max-w-[min(100%,20rem)] truncate text-sm text-[var(--lf-muted)] sm:max-w-[28rem]">
+      <span className="font-medium text-[var(--lf-text)]">{profile.username}</span>
+      <span className="mx-1.5 text-[var(--lf-muted)]">·</span>
       <span className="tabular-nums">{profile.email}</span>
     </span>
   ) : (
@@ -158,6 +158,9 @@ export function PortalPage() {
       trailing={
         <>
           {userLine}
+          <Link className="lf-link text-sm font-medium" to="/profile">
+            {t('ui.portal.profile')}
+          </Link>
           <Link className="lf-link text-sm font-medium" to="/change-password">
             {t('ui.portal.changePassword')}
           </Link>
@@ -196,10 +199,10 @@ export function PortalPage() {
             return (
               <div key={item.id} className="lf-row-card flex-wrap sm:flex-nowrap">
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium text-slate-100">{item.name}</div>
-                  <div className="text-xs text-slate-500">
+                  <div className="font-medium text-[var(--lf-text)]">{item.name}</div>
+                  <div className="text-xs text-[var(--lf-muted)]">
                     {item.code} · {item.market}
-                    <span className="mx-1.5 text-slate-600">·</span>
+                    <span className="mx-1.5 text-[var(--lf-muted)]">·</span>
                     {q?.time ?? '—'}
                   </div>
                 </div>
@@ -212,7 +215,7 @@ export function PortalPage() {
                       {q?.change ?? '—'} · {formatPercent(q?.percent)}
                     </div>
                   </div>
-                  <div className="lf-tabular text-xs text-slate-500">
+                  <div className="lf-tabular text-xs text-[var(--lf-muted)]">
                     <div>{t('ui.portal.high')} {q?.high ?? '—'}</div>
                     <div>{t('ui.portal.low')} {q?.low ?? '—'}</div>
                   </div>
@@ -224,7 +227,7 @@ export function PortalPage() {
             );
           })}
           {watchlist.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-slate-600/60 bg-slate-900/30 py-10 text-center text-sm text-slate-500">
+            <p className="rounded-lg border border-dashed border-slate-600/60 bg-slate-900/30 py-10 text-center text-sm text-[var(--lf-muted)]">
               {t('ui.portal.emptyWatchlist')}
             </p>
           ) : null}
