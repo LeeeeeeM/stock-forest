@@ -62,6 +62,7 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAppSettings() {
   const locale = useAppSettingsStore((s) => s.locale);
   const setLocale = useAppSettingsStore((s) => s.setLocale);

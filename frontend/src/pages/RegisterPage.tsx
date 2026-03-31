@@ -84,7 +84,7 @@ export function RegisterPage() {
       });
       messageApi.success(`${t('success.register')}: ${data.username} (${data.email})`);
       setTimeout(() => navigate('/login', { replace: true }), 500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       messageApi.error(resolveApiError(err, 'error.registerFailed'));
     }
   };

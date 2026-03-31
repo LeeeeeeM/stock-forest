@@ -6,12 +6,13 @@ export function useSmartBack(fallbackPath: string) {
   const location = useLocation();
 
   return useCallback(() => {
-    // Direct-open pages usually have key "default"; in this case use fallback route.
-    if (location.key === 'default' || window.history.length <= 1) {
+    // React Router stores current stack index in history.state.idx.
+    // Only go back when there is an in-tab stack entry to return to.
+    const idx = typeof window.history.state?.idx === 'number' ? window.history.state.idx : -1;
+    if (location.key === 'default' || idx <= 0) {
       navigate(fallbackPath, { replace: true });
       return;
     }
     navigate(-1);
   }, [fallbackPath, location.key, navigate]);
 }
-

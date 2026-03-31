@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthShell } from '@/components/layout/AuthShell';
 import { useI18n } from '@/i18n/useI18n';
 import { login } from '@/lib/api';
-import { setAccessToken } from '@/lib/auth';
+import { setAuthTokens } from '@/lib/auth';
 import { resolveApiError } from '@/lib/error-message';
 
 export function LoginPage() {
@@ -19,9 +19,9 @@ export function LoginPage() {
     e.preventDefault();
     try {
       const data = await login({ username, password });
-      setAccessToken(data.accessToken);
+      setAuthTokens(data.accessToken, data.refreshToken);
       navigate('/portal', { replace: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
       messageApi.error(resolveApiError(err, 'error.loginFailed'));
     }
   };

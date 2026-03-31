@@ -1,15 +1,122 @@
 import axios from 'axios';
+import type { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+import { clearAuthTokens, getAccessToken, getRefreshToken, setAccessToken } from '@/lib/auth';
 import { getLocale } from '@/i18n';
 
 export const api = axios.create({
   baseURL: '/api',
 });
 
+type RetryRequestConfig = AxiosRequestConfig & {
+  _retry?: boolean;
+  skipAuthRefresh?: boolean;
+};
+
+let refreshAccessTokenPromise: Promise<string> | null = null;
+
+function shouldSkipAutoRefresh(url?: string) {
+  if (!url) return false;
+  return (
+    url.includes('/auth/login') ||
+    url.includes('/auth/register') ||
+    url.includes('/auth/refresh') ||
+    url.includes('/auth/captcha') ||
+    url.includes('/auth/email-verification/register') ||
+    url.includes('/auth/email-verification/forgot-password') ||
+    url.includes('/auth/forgot-password')
+  );
+}
+
+async function requestNewAccessToken() {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    throw new Error('missing refresh token');
+  }
+  const refreshConfig: RetryRequestConfig = { skipAuthRefresh: true };
+  const res = await api.post('/auth/refresh', { refreshToken }, refreshConfig);
+  const accessToken = (res.data?.accessToken as string | undefined) ?? '';
+  if (!accessToken) {
+    throw new Error('invalid refresh response');
+  }
+  setAccessToken(accessToken);
+  return accessToken;
+}
+
+async function getNewAccessToken() {
+  if (!refreshAccessTokenPromise) {
+    refreshAccessTokenPromise = requestNewAccessToken().finally(() => {
+      refreshAccessTokenPromise = null;
+    });
+  }
+  return refreshAccessTokenPromise;
+}
+
 api.interceptors.request.use((config) => {
   config.headers = config.headers ?? {};
-  config.headers['Accept-Language'] = getLocale();
+
+  const headers = config.headers as InternalAxiosRequestConfig['headers'];
+  if (typeof headers.set === 'function') {
+    headers.set('Accept-Language', getLocale());
+  } else {
+    (headers as Record<string, string>)['Accept-Language'] = getLocale();
+  }
+  const token = getAccessToken();
+  const existingAuth = typeof headers.get === 'function'
+    ? headers.get('Authorization')
+    : (headers as Record<string, string>).Authorization;
+  if (token && !existingAuth) {
+    if (typeof headers.set === 'function') {
+      headers.set('Authorization', `Bearer ${token}`);
+    } else {
+      (headers as Record<string, string>).Authorization = `Bearer ${token}`;
+    }
+  }
+
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error: unknown) => {
+    if (!axios.isAxiosError(error)) {
+      return Promise.reject(error);
+    }
+
+    const status = error.response?.status;
+    const originalRequest = error.config as (InternalAxiosRequestConfig & RetryRequestConfig) | undefined;
+    if (!originalRequest || status !== 401) {
+      return Promise.reject(error);
+    }
+    if (originalRequest._retry || originalRequest.skipAuthRefresh || shouldSkipAutoRefresh(originalRequest.url)) {
+      return Promise.reject(error);
+    }
+
+    if (!getRefreshToken()) {
+      clearAuthTokens();
+      return Promise.reject(error);
+    }
+
+    originalRequest._retry = true;
+
+    try {
+      const newAccessToken = await getNewAccessToken();
+      originalRequest.headers = originalRequest.headers ?? {};
+      const headers = originalRequest.headers as InternalAxiosRequestConfig['headers'];
+      if (typeof headers.set === 'function') {
+        headers.set('Authorization', `Bearer ${newAccessToken}`);
+      } else {
+        (headers as Record<string, string>).Authorization = `Bearer ${newAccessToken}`;
+      }
+      return api.request(originalRequest);
+    } catch (refreshErr) {
+      clearAuthTokens();
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.replace('/login');
+      }
+      return Promise.reject(refreshErr);
+    }
+  },
+);
 
 export type RegisterPayload = {
   username: string;

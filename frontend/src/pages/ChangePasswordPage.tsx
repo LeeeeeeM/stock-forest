@@ -103,7 +103,7 @@ export function ChangePasswordPage() {
       setNewPassword('');
       setConfirmNewPassword('');
       setPwdVerificationCode('');
-    } catch (err: any) {
+    } catch (err: unknown) {
       messageApi.error(resolveApiError(err, 'error.changePasswordFailed'));
     }
   };

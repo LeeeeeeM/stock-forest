@@ -77,7 +77,7 @@ export function ForgotPasswordPage() {
       });
       messageApi.success(t('success.passwordReset'));
       setTimeout(() => navigate('/login', { replace: true }), 600);
-    } catch (err: any) {
+    } catch (err: unknown) {
       messageApi.error(resolveApiError(err, 'error.forgotPasswordFailed'));
     }
   };

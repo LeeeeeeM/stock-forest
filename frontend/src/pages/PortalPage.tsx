@@ -66,7 +66,7 @@ export function PortalPage() {
     }
     me(token).then(setProfile).catch(() => navigate('/login', { replace: true }));
     listWatchlist(token).then(setWatchlist).catch(() => undefined);
-  }, [navigate, token]);
+  }, [navigate, setProfile, setWatchlist, token]);
 
   useEffect(() => {
     if (!token) return;
@@ -100,7 +100,7 @@ export function PortalPage() {
       setSearchLoading(true);
       const data = await searchStocks(q);
       setSearchResults(data.slice(0, 20));
-    } catch (err: any) {
+    } catch (err: unknown) {
       messageApi.error(resolveApiError(err, 'error.searchFailed'));
     } finally {
       setSearchLoading(false);
@@ -115,7 +115,7 @@ export function PortalPage() {
         market: item.market,
       });
       addWatchlistItem(created);
-    } catch (err: any) {
+    } catch (err: unknown) {
       messageApi.error(resolveApiError(err, 'error.addWatchlistFailed'));
     }
   };
@@ -124,7 +124,7 @@ export function PortalPage() {
     try {
       await removeWatchlist(token, id);
       removeWatchlistItem(id);
-    } catch (err: any) {
+    } catch (err: unknown) {
       messageApi.error(resolveApiError(err, 'error.removeWatchlistFailed'));
     }
   };

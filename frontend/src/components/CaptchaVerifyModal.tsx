@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button, Input, Modal, message } from 'antd';
 import { getCaptcha } from '@/lib/api';
 import { resolveApiError } from '@/lib/error-message';
@@ -18,22 +18,22 @@ export function CaptchaVerifyModal({ open, onCancel, onVerify }: Props) {
   const [captchaImage, setCaptchaImage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const refreshCaptcha = async () => {
+  const refreshCaptcha = useCallback(async () => {
     try {
       const data = await getCaptcha();
       setCaptchaId(data.captchaId);
       setCaptchaImage(data.imageDataUrl);
       setCaptchaCode('');
-    } catch (err: any) {
+    } catch (err: unknown) {
       messageApi.error(resolveApiError(err, 'error.captchaLoadFailed'));
     }
-  };
+  }, [messageApi]);
 
   useEffect(() => {
     if (open) {
       void refreshCaptcha();
     }
-  }, [open]);
+  }, [open, refreshCaptcha]);
 
   const handleOk = async () => {
     if (!captchaId || !captchaCode.trim()) {
@@ -43,7 +43,7 @@ export function CaptchaVerifyModal({ open, onCancel, onVerify }: Props) {
     setLoading(true);
     try {
       await onVerify({ captchaId, captchaCode: captchaCode.trim() });
-    } catch (err: any) {
+    } catch (err: unknown) {
       messageApi.error(resolveApiError(err, 'error.captchaVerifyFailed'));
       await refreshCaptcha();
     } finally {

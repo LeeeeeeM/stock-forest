@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
 import type { WatchlistItem } from '@/lib/api';
 
 type PortalProfile = {
@@ -18,27 +17,18 @@ type PortalState = {
   clearPortalCache: () => void;
 };
 
-export const usePortalStore = create<PortalState>()(
-  persist(
-    (set) => ({
-      profile: null,
-      watchlist: [],
-      setProfile: (profile) => set({ profile }),
-      setWatchlist: (watchlist) => set({ watchlist }),
-      addWatchlistItem: (item) =>
-        set((state) => ({
-          watchlist: [item, ...state.watchlist.filter((x) => x.id !== item.id)],
-        })),
-      removeWatchlistItem: (id) =>
-        set((state) => ({
-          watchlist: state.watchlist.filter((x) => x.id !== id),
-        })),
-      clearPortalCache: () => set({ profile: null, watchlist: [] }),
-    }),
-    {
-      name: 'portal_cache',
-      storage: createJSONStorage(() => localStorage),
-    },
-  ),
-);
-
+export const usePortalStore = create<PortalState>()((set) => ({
+  profile: null,
+  watchlist: [],
+  setProfile: (profile) => set({ profile }),
+  setWatchlist: (watchlist) => set({ watchlist }),
+  addWatchlistItem: (item) =>
+    set((state) => ({
+      watchlist: [item, ...state.watchlist.filter((x) => x.id !== item.id)],
+    })),
+  removeWatchlistItem: (id) =>
+    set((state) => ({
+      watchlist: state.watchlist.filter((x) => x.id !== id),
+    })),
+  clearPortalCache: () => set({ profile: null, watchlist: [] }),
+}));
