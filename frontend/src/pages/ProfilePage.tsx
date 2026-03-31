@@ -1,7 +1,8 @@
 import { useEffect, useMemo } from 'react';
-import { Button, message as antdMessage } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { message as antdMessage } from 'antd';
+import { Link, useNavigate } from 'react-router-dom';
 import { DashboardShell } from '@/components/layout/DashboardShell';
+import { useSmartBack } from '@/hooks/useSmartBack';
 import { useI18n } from '@/i18n/useI18n';
 import { clearAccessToken, getAccessToken } from '@/lib/auth';
 import { profile } from '@/lib/api';
@@ -24,6 +25,7 @@ export function ProfilePage() {
   const setData = useProfileStore((s) => s.setData);
   const clearProfileCache = useProfileStore((s) => s.clearProfileCache);
   const clearPortalCache = usePortalStore((s) => s.clearPortalCache);
+  const backToPortal = useSmartBack('/portal');
 
   useEffect(() => {
     if (!token) {
@@ -47,7 +49,6 @@ export function ProfilePage() {
     clearAccessToken();
     clearProfileCache();
     clearPortalCache();
-    navigate('/login', { replace: true });
   };
 
   return (
@@ -56,10 +57,30 @@ export function ProfilePage() {
       description={t('ui.profile.description')}
       trailing={
         <>
-          <Button onClick={() => navigate('/portal')}>{t('ui.profile.backPortal')}</Button>
-          <Button type="primary" danger ghost onClick={onLogout}>
+          <Link
+            className="lf-link text-sm font-medium"
+            to="/portal"
+            onClick={(e) => {
+              e.preventDefault();
+              backToPortal();
+            }}
+          >
+            {t('ui.profile.backPortal')}
+          </Link>
+          <Link
+            className="lf-link text-sm font-medium"
+            to="/change-password"
+          >
+            {t('ui.portal.changePassword')}
+          </Link>
+          <Link
+            className="inline-flex h-10 items-center rounded-md border border-red-500 px-4 text-sm font-medium text-red-500"
+            to="/login"
+            replace
+            onClick={onLogout}
+          >
             {t('ui.portal.logout')}
-          </Button>
+          </Link>
         </>
       }
     >

@@ -170,9 +170,6 @@ export function PortalPage() {
           <Link className="lf-link text-sm font-medium" to="/profile">
             {t('ui.portal.profile')}
           </Link>
-          <Link className="lf-link text-sm font-medium" to="/change-password">
-            {t('ui.portal.changePassword')}
-          </Link>
           <Button type="primary" danger ghost onClick={onLogout}>
             {t('ui.portal.logout')}
           </Button>

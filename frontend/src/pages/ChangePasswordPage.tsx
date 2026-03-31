@@ -6,6 +6,7 @@ import { CaptchaVerifyModal } from '@/components/CaptchaVerifyModal';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { useI18n } from '@/i18n/useI18n';
 import { SendCodeButton } from '@/components/SendCodeButton';
+import { useSmartBack } from '@/hooks/useSmartBack';
 import { changePassword, me, sendChangePasswordVerificationCode } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth';
 import { resolveApiError } from '@/lib/error-message';
@@ -16,6 +17,7 @@ export function ChangePasswordPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const { t } = useI18n();
   const navigate = useNavigate();
+  const backToProfile = useSmartBack('/profile');
   const token = getAccessToken();
   const [pwdEmail, setPwdEmail] = useState('');
   const [oldPassword, setOldPassword] = useState('');
@@ -111,8 +113,15 @@ export function ChangePasswordPage() {
       title={t('ui.change.title')}
       description={t('ui.change.description')}
       trailing={
-        <Link className="lf-link text-sm font-medium" to="/portal">
-          {t('ui.portal.back')}
+        <Link
+          className="lf-link text-sm font-medium"
+          to="/profile"
+          onClick={(e) => {
+            e.preventDefault();
+            backToProfile();
+          }}
+        >
+          {t('ui.change.backProfile')}
         </Link>
       }
     >

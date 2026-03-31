@@ -2,17 +2,19 @@ package service
 
 import (
 	"errors"
+	"image/color"
 	"strings"
 
 	"github.com/mojocn/base64Captcha"
 )
 
 const (
-	captchaHeight   = 48
-	captchaWidth    = 160
-	captchaLength   = 5
-	captchaMaxSkew  = 0.6
-	captchaDotCount = 80
+	captchaHeight     = 48
+	captchaWidth      = 160
+	captchaLength     = 4
+	captchaNoiseCount = 10
+	// Exclude ambiguous characters like 0/O and 1/I/l for readability.
+	captchaSource = "23456789qwertyuipkjhgfdsazxcvbnm"
 )
 
 type CaptchaService struct {
@@ -20,12 +22,16 @@ type CaptchaService struct {
 }
 
 func NewCaptchaService() *CaptchaService {
-	driver := base64Captcha.NewDriverDigit(
+	driver := base64Captcha.NewDriverString(
 		captchaHeight,
 		captchaWidth,
+		captchaNoiseCount,
+		6, // 1 1 0
 		captchaLength,
-		captchaMaxSkew,
-		captchaDotCount,
+		captchaSource,
+		&color.RGBA{R: 255, G: 255, B: 255, A: 255},
+		nil,
+		nil,
 	)
 	return &CaptchaService{
 		captcha: base64Captcha.NewCaptcha(driver, base64Captcha.DefaultMemStore),

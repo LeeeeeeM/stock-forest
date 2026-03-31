@@ -77,6 +77,7 @@ export function CaptchaVerifyModal({ open, onCancel, onVerify }: Props) {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Input
+              className="min-w-0 flex-1"
               value={captchaCode}
               onChange={(ev) => setCaptchaCode(ev.target.value)}
               onPressEnter={(ev) => {
@@ -89,11 +90,11 @@ export function CaptchaVerifyModal({ open, onCancel, onVerify }: Props) {
             <button
               type="button"
               onClick={() => void refreshCaptcha()}
-              className="h-10 overflow-hidden rounded-md border border-slate-700/70 bg-slate-900/70 px-2"
+              className="h-12 w-[160px] flex-none overflow-hidden rounded-md border border-slate-700/70 bg-slate-900/70 p-0"
               title="点击刷新图形验证码"
             >
               {captchaImage ? (
-                <img src={captchaImage} alt="captcha" className="h-full w-[120px] object-cover" />
+                <img src={captchaImage} alt="captcha" className="h-full w-full object-cover" />
               ) : (
                 <span className="text-xs text-slate-400">{t('ui.captcha.loading')}</span>
               )}
