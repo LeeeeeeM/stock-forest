@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Button, message as antdMessage } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { useI18n } from '@/i18n/useI18n';
 import { clearAccessToken, getAccessToken } from '@/lib/auth';
-import { profile, type ProfileData } from '@/lib/api';
+import { profile } from '@/lib/api';
 import { resolveApiError } from '@/lib/error-message';
+import { usePortalStore } from '@/store/portal-store';
+import { useProfileStore } from '@/store/profile-store';
 
 function formatLoginTime(value: string) {
   const d = new Date(value);
@@ -18,7 +20,10 @@ export function ProfilePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const token = getAccessToken();
-  const [data, setData] = useState<ProfileData | null>(null);
+  const data = useProfileStore((s) => s.data);
+  const setData = useProfileStore((s) => s.setData);
+  const clearProfileCache = useProfileStore((s) => s.clearProfileCache);
+  const clearPortalCache = usePortalStore((s) => s.clearPortalCache);
 
   useEffect(() => {
     if (!token) {
@@ -30,14 +35,18 @@ export function ProfilePage() {
       .catch((err: unknown) => {
         messageApi.error(resolveApiError(err, 'error.profileLoadFailed'));
         clearAccessToken();
+        clearProfileCache();
+        clearPortalCache();
         navigate('/login', { replace: true });
       });
-  }, [token, navigate, messageApi]);
+  }, [token, navigate, messageApi, setData, clearProfileCache, clearPortalCache]);
 
   const recentLogins = useMemo(() => data?.recentLogins ?? [], [data]);
 
   const onLogout = () => {
     clearAccessToken();
+    clearProfileCache();
+    clearPortalCache();
     navigate('/login', { replace: true });
   };
 

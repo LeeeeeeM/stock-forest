@@ -1,10 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { getLocale, setLocale, type Locale } from '@/i18n';
 
 export type ThemeMode = 'dark' | 'light';
 
-type AppSettingsContextValue = {
+type AppSettingsState = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   themeMode: ThemeMode;
@@ -12,8 +14,7 @@ type AppSettingsContextValue = {
 };
 
 const THEME_MODE_KEY = 'app_theme_mode';
-
-const AppSettingsContext = createContext<AppSettingsContextValue | null>(null);
+const SETTINGS_KEY = 'app_settings';
 
 function detectDefaultTheme(): ThemeMode {
   if (typeof window === 'undefined') return 'dark';
@@ -22,9 +23,28 @@ function detectDefaultTheme(): ThemeMode {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
+const useAppSettingsStore = create<AppSettingsState>()(
+  persist(
+    (set) => ({
+      locale: getLocale(),
+      setLocale: (locale) => set({ locale }),
+      themeMode: detectDefaultTheme(),
+      setThemeMode: (themeMode) => set({ themeMode }),
+    }),
+    {
+      name: SETTINGS_KEY,
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        locale: state.locale,
+        themeMode: state.themeMode,
+      }),
+    },
+  ),
+);
+
 export function AppSettingsProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => getLocale());
-  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => detectDefaultTheme());
+  const locale = useAppSettingsStore((s) => s.locale);
+  const themeMode = useAppSettingsStore((s) => s.themeMode);
 
   useEffect(() => {
     setLocale(locale);
@@ -34,29 +54,18 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
   }, [locale]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof document === 'undefined') return;
     window.localStorage.setItem(THEME_MODE_KEY, themeMode);
     document.documentElement.setAttribute('data-theme', themeMode);
   }, [themeMode]);
 
-  const value = useMemo<AppSettingsContextValue>(
-    () => ({
-      locale,
-      setLocale: setLocaleState,
-      themeMode,
-      setThemeMode: setThemeModeState,
-    }),
-    [locale, themeMode],
-  );
-
-  return <AppSettingsContext.Provider value={value}>{children}</AppSettingsContext.Provider>;
+  return <>{children}</>;
 }
 
 export function useAppSettings() {
-  const ctx = useContext(AppSettingsContext);
-  if (!ctx) {
-    throw new Error('useAppSettings must be used inside AppSettingsProvider');
-  }
-  return ctx;
+  const locale = useAppSettingsStore((s) => s.locale);
+  const setLocale = useAppSettingsStore((s) => s.setLocale);
+  const themeMode = useAppSettingsStore((s) => s.themeMode);
+  const setThemeMode = useAppSettingsStore((s) => s.setThemeMode);
+  return { locale, setLocale, themeMode, setThemeMode };
 }
-

@@ -12,10 +12,11 @@ import {
   searchStocks,
   type Quote,
   type SearchItem,
-  type WatchlistItem,
 } from '@/lib/api';
 import { clearAccessToken, getAccessToken } from '@/lib/auth';
 import { resolveApiError } from '@/lib/error-message';
+import { usePortalStore } from '@/store/portal-store';
+import { useProfileStore } from '@/store/profile-store';
 
 function toNumberSafe(value?: string) {
   if (!value) return 0;
@@ -43,12 +44,18 @@ export function PortalPage() {
   const [messageApi, contextHolder] = antdMessage.useMessage();
   const { t } = useI18n();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<{ id: number; username: string; email: string } | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResults, setSearchResults] = useState<SearchItem[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
+  const profile = usePortalStore((s) => s.profile);
+  const watchlist = usePortalStore((s) => s.watchlist);
+  const setProfile = usePortalStore((s) => s.setProfile);
+  const setWatchlist = usePortalStore((s) => s.setWatchlist);
+  const addWatchlistItem = usePortalStore((s) => s.addWatchlistItem);
+  const removeWatchlistItem = usePortalStore((s) => s.removeWatchlistItem);
+  const clearPortalCache = usePortalStore((s) => s.clearPortalCache);
+  const clearProfileCache = useProfileStore((s) => s.clearProfileCache);
 
   const token = getAccessToken();
 
@@ -107,7 +114,7 @@ export function PortalPage() {
         name: item.name,
         market: item.market,
       });
-      setWatchlist((prev) => [created, ...prev]);
+      addWatchlistItem(created);
     } catch (err: any) {
       messageApi.error(resolveApiError(err, 'error.addWatchlistFailed'));
     }
@@ -116,7 +123,7 @@ export function PortalPage() {
   const onRemoveWatch = async (id: number) => {
     try {
       await removeWatchlist(token, id);
-      setWatchlist((prev) => prev.filter((x) => x.id !== id));
+      removeWatchlistItem(id);
     } catch (err: any) {
       messageApi.error(resolveApiError(err, 'error.removeWatchlistFailed'));
     }
@@ -124,6 +131,8 @@ export function PortalPage() {
 
   const onLogout = () => {
     clearAccessToken();
+    clearPortalCache();
+    clearProfileCache();
     navigate('/login', { replace: true });
   };
 

@@ -1,14 +1,13 @@
-const ACCESS_TOKEN_KEY = 'accessToken';
+import { useAuthStore } from '@/store/auth-store';
 
 export function getAccessToken() {
-  return localStorage.getItem(ACCESS_TOKEN_KEY) ?? '';
+  return useAuthStore.getState().accessToken ?? '';
 }
 
 export function setAccessToken(token: string) {
-  localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  useAuthStore.getState().setAccessToken(token);
 }
 
 export function clearAccessToken() {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  useAuthStore.getState().clearAccessToken();
 }
-
