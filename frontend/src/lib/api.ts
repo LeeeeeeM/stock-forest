@@ -125,6 +125,7 @@ export type RegisterPayload = {
   verificationCode: string;
 };
 
+/** username 字段传用户名或注册邮箱（后端按是否含 @ 区分） */
 export type LoginPayload = {
   username: string;
   password: string;

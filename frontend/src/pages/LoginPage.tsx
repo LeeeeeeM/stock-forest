@@ -45,7 +45,7 @@ export function LoginPage() {
       <form className="space-y-5" onSubmit={onSubmit}>
         <div>
           <label className="lf-field-label" htmlFor="login-username">
-            {t('ui.login.username')}
+            {t('ui.login.account')}
           </label>
           <input
             id="login-username"
@@ -54,7 +54,7 @@ export function LoginPage() {
             autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder={t('ui.placeholder.username')}
+            placeholder={t('ui.placeholder.loginAccount')}
           />
         </div>
         <div>

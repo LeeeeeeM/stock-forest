@@ -2,9 +2,11 @@ package service
 
 import (
 	"errors"
+	"strings"
+	"time"
+
 	"github.com/LeeeeeeM/stock-forest/backend/internal/model"
 	"github.com/LeeeeeeM/stock-forest/backend/internal/repository"
-	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -63,8 +65,16 @@ func (s *AuthService) Register(username, email, password string) (*model.User, e
 	return user, nil
 }
 
-func (s *AuthService) Login(username, password string) (*model.User, string, string, error) {
-	user, err := s.repo.FindByUsername(username)
+// Login 使用 identifier：含 @ 时按邮箱（小写）查找，否则按用户名查找。
+func (s *AuthService) Login(identifier, password string) (*model.User, string, string, error) {
+	identifier = strings.TrimSpace(identifier)
+	var user *model.User
+	var err error
+	if strings.Contains(identifier, "@") {
+		user, err = s.repo.FindByEmail(strings.ToLower(identifier))
+	} else {
+		user, err = s.repo.FindByUsername(identifier)
+	}
 	if err != nil {
 		return nil, "", "", err
 	}

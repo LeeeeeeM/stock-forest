@@ -46,7 +46,7 @@ type registerReq struct {
 }
 
 type loginReq struct {
-	Username string `json:"username"`
+	Username string `json:"username"` // 用户名或邮箱（与邮箱一致时用邮箱登录）
 	Password string `json:"password"`
 }
 
