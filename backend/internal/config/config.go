@@ -45,7 +45,7 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		AppPort: getEnv("APP_PORT", "8080"),
+		AppPort: getAppPort(),
 		GinMode: getEnv("GIN_MODE", "debug"),
 		TrustedProxies: getEnvSlice(
 			"TRUSTED_PROXIES",
@@ -90,6 +90,17 @@ func (c *Config) DatabaseURL() string {
 		url.QueryEscape(c.DBSSLMode),
 		url.QueryEscape(c.DBTimezone),
 	)
+}
+
+// getAppPort 与 fav-layout 容器约定一致：优先 APP_PORT，其次 PORT，默认 8080。
+func getAppPort() string {
+	if v := strings.TrimSpace(os.Getenv("APP_PORT")); v != "" {
+		return v
+	}
+	if v := strings.TrimSpace(os.Getenv("PORT")); v != "" {
+		return v
+	}
+	return "8080"
 }
 
 func getEnv(key, fallback string) string {

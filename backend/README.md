@@ -4,8 +4,8 @@
 
 1. 复制环境变量：
    - `cp .env.example .env`
-2. 在仓库根目录启动 PostgreSQL：
-   - `docker compose -f ../docker-compose.yml up -d`
+2. 自行启动 PostgreSQL（示例）：
+   - `docker run -d --name pg-stock -e POSTGRES_USER=app_user -e POSTGRES_PASSWORD=app_pass -e POSTGRES_DB=app_db -p 5432:5432 postgres:16`
 3. 安装依赖：
    - `go mod tidy`
 4. 执行数据库迁移：
