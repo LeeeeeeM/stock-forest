@@ -13,7 +13,7 @@ docker compose up -d --build
 启动后：
 
 - 应用入口（前端 + 后端 API 代理）：`http://localhost:5173`
-- 后端 API（容器内）：`http://127.0.0.1:8080`（由应用容器内 Nginx 代理）
+- 后端 API（容器内）：`http://127.0.0.1:8080`（由应用容器内 OpenResty 代理）
 - PostgreSQL：`localhost:5432`
 - 数据库迁移（可选，镜像已内置迁移工具）：
   - `docker compose exec app /app/migrate up`
